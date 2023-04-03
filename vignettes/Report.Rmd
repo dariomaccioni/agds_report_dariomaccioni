@@ -12,15 +12,15 @@ output: html_document
 ### Task 1
 
 ```{r}
-list.files("/Users/dario/Desktop/Geographie Studium/Aufbaustudium/FS23/AGDS/data_repexercise") # list all files in the folder needed
+list.files("../vignettes") # list all files in the folder needed
 
-database_s2 <- read.table("data/data_csv_repexercise.csv", sep = ",", header = TRUE)
+database_s1 <- read.table("../data/data_csv_repexercise.csv", sep = ",", header = TRUE)
 ```
 
 ### Task 2
 
 ```{r}
-sample_date_RR <- dplyr::mutate(`database_s2`, log_response_ratio = log(`increased.CO2`/`ambient.CO2`)) #adding a new column to the table and calculation of the log_response_ratio for each observation
+sample_date_RR <- dplyr::mutate(`database_s1`, log_response_ratio = log(`increased.CO2`/`ambient.CO2`)) #adding a new column to the table and calculation of the log_response_ratio for each observation
 ```
 
 ```{r}

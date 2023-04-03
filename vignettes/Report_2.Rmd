@@ -1,0 +1,108 @@
+---
+title: "Report_2"
+author: "Dario Maccioni"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Report Exercise 2
+
+## Task 1
+
+```{r}
+airquality <- datasets::airquality # Loading the dataset into R
+
+airquality <- dplyr::mutate(`airquality`, `Temp` = (`Temp`-32)*5/9) #convert the Temp column from Fahrenheit to °Celcius
+airquality <- dplyr::mutate(`airquality`, `month` = `Month`)
+```
+
+### Figure 1
+
+```{r}
+airquality <- airquality |>
+  dplyr::mutate(Month = lubridate::month(Month, label = TRUE)) #giving the column Month labels like Mai, Juni, Juli...
+
+```
+
+```{r}
+ggplot2::ggplot(
+  airquality,
+  ggplot2::aes(x = Solar.R, y = Temp)) + 
+  ggplot2::geom_point(alpha = 0.4, na.rm = TRUE) +
+  ggplot2::geom_smooth(method = "lm", color = "red", se = FALSE, na.rm = TRUE) + #calculating trend for each Month in red
+  ggplot2::stat_smooth(position = "identity", method = "auto", #Displaying the course of each Month with the 0.95 interval
+    formula = y ~ x, n = 153,
+    level = 0.95, na.rm = TRUE) +
+  ggplot2::labs(title = "Relation between Temperature and Solar radiation in New York 1973", subtitle = "Displayed for selected month", y = "Temperatur in [°C]",
+       x = "Solar Radiation in [lang]") +
+  ggplot2::facet_wrap(~Month) #Combining the chart with the column Month so that the labels of the Month are displayed
+
+```
+
+### Figure 2
+
+```{r}
+library(ggplot2)
+ggplot(
+    airquality,
+    aes(x = Solar.R, y = Temp)) +
+  geom_point(na.rm = TRUE) + #creating a point cloud for the whole dataset combining temperature and solar radiation
+  labs(title = "Relation between Temperature and Solar radiation in New York 1973", subtitle = "Displayed for the whole dataset", x = "Solar Radiation in [lang]",
+       y = "Temperature in [°C]") +
+  theme_classic()
+```
+
+### Figure 3
+
+```{r}
+library(ggplot2)
+ggplot(
+    airquality,
+    aes(x = Solar.R, y = Temp)) +
+  stat_density_2d(
+    geom = "raster", # the geometric object to display the data
+    aes(fill = after_stat(density)), # using `density`, a variable calculated by the stat
+    contour = FALSE, na.rm = TRUE
+    ) +
+  scale_fill_viridis_c() +
+  labs(title = "Density chart for the relation between Temperature and Solar radiation", x = "Solar Radiation in [lang]", 
+       y = "Temperature in [°C]") +
+  theme_classic() + 
+  scale_x_continuous(expand = c(0, 0)) +  # avoid gap between plotting area and axis
+  scale_y_continuous(expand = c(0, 0))
+```
+
+## Task 2
+
+The three illustration shown in this report display the relationship between Temperature and Solar radiation. Both metrics where measured in New York in 1973 for the months may to september. One problem that comes up is the location where the measurement took place. In this case the Solar radiation was measured at the Central Park and the Temperature was measured at the La Guardia Airport. To analyse the correlation between both metrics it is important have the same conditions for the measurement. Another Problem is that the Solar radiation was measured between 0800 and 1200. In this period it is not usual to have a maximum daily temperature. The maximum daily temperature is most likely reached during the afternoon. A third Problem is, that the temperature in the dataframe is given as the maximum daily temperature. To have more accurate data it would have been better to display the whole dataframe with a hourly interval. Then it would be possible to calculate the mean temperature for each day of the month. Another statistical metric would be the median to deal better with outliers. To see how much the data scatters one could use the standard deviation. This statistical metric shows how distant a value is from the mean. If the standard deviation is large then the data scatters a lot. If the standard deviation is small, this means that the most part of the data is near the mean. This 3 statistical metric could be used in order to have more detailed data and to display a more accurate illusration. 
+
+I choosed this 3 metrics to show the variation between the temperature data and the solar radiation data. It is also important to know if there are any outliers which could influence our data. The standard deviation of the solar radiation is very high. In this case one must analyse the data to find out what the problems are. A possible main problem could be a cloud which prevents the radiation to come to earth. Therefore the data is influenced and maybe this is the reason why the standard deviation is that high. So basically these metrics show how the data scatters and if there are any anomalies. If this is the case, one could think about reasons why it is like that. 
+
+### Statistical Metrics for Temperature
+
+```{r}
+mean(airquality$Temp, na.rm = TRUE)
+median(airquality$Temp, na.rm = TRUE)
+sd(airquality$Temp, na.rm = TRUE)
+
+#in this case the median and the mean are very near to each other. This could mean that there are not many to none outliers. Probably they do not differ that much because there are only maximum values used. If the dataframe would include all temperature during a day the data would differ much more. The standard deviation is also small which means that the data is near the mean.
+```
+
+### Statistical Metrics for Solar radiation
+
+```{r}
+mean(airquality$Solar.R, na.rm = TRUE)
+median(airquality$Solar.R, na.rm = TRUE)
+sd(airquality$Solar.R, na.rm = TRUE)
+
+#if the median is significantly larger than the mean, this could mean that there are some outliers which influence the mean. The standard deviation in this case shows that the data scatters a lot.
+```
+
+## Task 3
+
+_My hypothese for the displayed illustration:_
+
+There is a correlation between increasing Solar radiation and increasing temperature. With higher Solar radiation, the temperature increases. 
+
+On the first illustration the relation between Temperature and Solar radiation is displayed. It can be seen that the trend (red line) is nearly positive for each month displayed. This could mean that with rising Solar radiation the Temperature increases as well. The third illustration shows the same phenomenon. As it can be seen it shows the density and therefore the majority the temperature data has a relatively "high" value for high Solar radiation. There could be a correlation between these two metrics, but to prove this more analyses are needed. As already described the major problem is that all metrics of the dataframe given, are not measured on the same spot, at the same time. To have a dataframe that is valid it is important to have accurate data and much samples. So with the given values i can not make a statistical analysis which is meaningful, because the problem starts with the measurement. It would be interesting to have data for a whole year, or maybe for several years to analyse how this trend between Solar radiation and Temperature develops. So in this case my hypotheses makes only sense if there are enough measurements (more month or even several years) and if the measurement take place on the same spot at the same time every day in a for example hourly interval. Then it would be possible to make a meaningful analysis. 
+
