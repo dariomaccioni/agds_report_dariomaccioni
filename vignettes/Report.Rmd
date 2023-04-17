@@ -12,7 +12,7 @@ output: html_document
 ### Task 1
 
 ```{r}
-list.files("../vignettes") # list all files in the folder needed
+list.files("../data") # list all files in the folder needed
 
 database_s1 <- read.table("../data/data_csv_repexercise.csv", sep = ",", header = TRUE)
 ```
