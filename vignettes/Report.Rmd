@@ -14,7 +14,7 @@ output: html_document
 ```{r}
 list.files("../data") # list all files in the folder needed
 
-database_s1 <- read.table("../data/data_csv_repexercise.csv", sep = ",", header = TRUE)
+database_s1 <- readr::read_csv("../data/data_csv_repexercise.csv")
 ```
 
 ### Task 2
