@@ -9,46 +9,54 @@ output: html_document
 
 ## Report Exercise 1
 
-### Task 1
+In this report data of soil organic carbon measurements in experiments are shown. The goal of this report is to manually import a CSV file and then summarise the different columns of the dataframe to finally calculate the log_response_ratio_mean for 3 different phases (early, mid and late). The Report is structured in three Tasks.
 
-```{r}
+### Task 1 - List and import files needed
+
+```{r results='hide'}
 list.files("../data") # list all files in the folder needed
-
-database_s1 <- readr::read_csv("../data/data_csv_repexercise.csv")
-
-getwd()
 ```
 
-### Task 2
-
-```{r}
-sample_date_RR <- dplyr::mutate(`database_s1`, log_response_ratio = log(`increased.CO2`/`ambient.CO2`)) #adding a new column to the table and calculation of the log_response_ratio for each observation
+```{r message = FALSE}
+database_s1 <- readr::read_csv("../data/data_csv_repexercise.csv") # read and import the .csv dataset and creating a new table in R
 ```
 
+There is some data missing in the "Sample date (year)" column. This must be taken into account if you make further calculations with the data. In this report the missing values have been noted but were not ignored.
+
+```{r message = FALSE}
+visdat::vis_miss(database_s1) # Checking if any data in the dataframe is missing
+```
+
+### Task 2 - Calculate the mean log_response_ratio for each year
+
 ```{r}
+sample_date_RR <- dplyr::mutate(`database_s1`, log_response_ratio = log(`increased CO2`/`ambient CO2`)) #adding a new column to the table and calculation of the log_response_ratio for each observation
+```
+
+```{r message = FALSE}
 sample_date_yearly <- sample_date_RR |> #working with the created table
-  dplyr::group_by(`Experiment`, `Sample.date`) |> #aggregate `Experiment` with a subgroup (`Sample date`) by the function group_by
+  dplyr::group_by(`Experiment`, `Sample date`) |>#aggregate `Experiment` with a subgroup (`Sample date`) by the function group_by
   dplyr::summarise(`log_response_ratio_mean` = mean(`log_response_ratio`)) #calculating the mean of the log_response_ratio per year for each experiment
 ```
 
-```{r}
-knitr::kable(sample_date_yearly) #presenting the results as table
+```{r message = FALSE}
+knitr::kable(sample_date_yearly[1:10,]) #presenting the results as table
 ```
 
-### Task 3
+### Task 3 - Creating 3 Phases with mean log_response_ratio
 
 ```{r}
-Phase_1 <- dplyr::filter(sample_date_RR, `Time..years.` <3) |> #Filter early phase (<3) and creating a new table (Phase_1)
+Phase_1 <- dplyr::filter(sample_date_RR, `Time (years)` <3) |> #Filter early phase (<3) and creating a new table (Phase_1)
   dplyr::summarise(`log_response_ratio_mean` = mean(`log_response_ratio`)) #aggregating all log_response_ratios of the phase and calculating the mean for Phase_1
 ```
 
 ```{r}
-Phase_2 <- dplyr::filter(sample_date_RR, `Time..years.` >=3 & `Time..years.` <6) |> #Filter mid phase (3-6) and creating a new table (Phase_2)
+Phase_2 <- dplyr::filter(sample_date_RR, `Time (years)` >=3 & `Time (years)` <6) |> #Filter mid phase (3-6) and creating a new table (Phase_2)
   dplyr::summarise(`log_response_ratio_mean` = mean(`log_response_ratio`)) #aggregating all log_response_ratios of the phase and calculating the mean for Phase_2
 ```
 
 ```{r}
-Phase_3 <- dplyr::filter(sample_date_RR, `Time..years.` >=6) |> #Filter late phase (>6) and creating a new table (Phase_3)
+Phase_3 <- dplyr::filter(sample_date_RR, `Time (years)` >=6) |> #Filter late phase (>6) and creating a new table (Phase_3)
   dplyr::summarise(`log_response_ratio_mean` = mean(`log_response_ratio`)) #aggregating all log_response_ratios of the phase and calculating the mean for Phase_3
 ```
 
