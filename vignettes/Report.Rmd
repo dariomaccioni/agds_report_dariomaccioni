@@ -17,10 +17,6 @@ In this report data of soil organic carbon measurements in experiments are shown
 list.files("./data") # list all files in the folder needed
 ```
 
-```{r}
-setwd("/Users/dario/agds_report_dariomaccioni")
-```
-
 ```{r message = FALSE}
 database_s1 <- readr::read_csv("./data/data_csv_repexercise.csv") # read and import the .csv dataset and creating a new table in R
 ```
