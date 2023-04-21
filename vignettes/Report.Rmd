@@ -25,9 +25,9 @@ list.files("../data") # list all files in the folder needed
 ```
 
 ```{r message = FALSE}
-here("data", "data_csv_repexercise.csv")
-database_s1 <- readr::read_csv(
-  here::here("data","data_csv_repexercise.csv")) # read and import the .csv dataset and creating a new table in R
+here::here("data", "data_csv_repexercise.csv")
+here::here("data/data_csv_repexercise.csv")
+database_s1 <- readr::read_csv("../data/data_csv_repexercise.csv") # read and import the .csv dataset and creating a new table in R
 ```
 
 There is some data missing in the "Sample date (year)" column. This must be taken into account if you make further calculations with the data. In this report the missing values have been noted but were not ignored.
@@ -80,6 +80,9 @@ knitr::kable(all_phases) #presenting the results as table
 ```
 
 
+```{r}
+here::dr_here()
+```
 
 
 
