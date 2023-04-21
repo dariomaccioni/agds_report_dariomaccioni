@@ -18,8 +18,14 @@ airquality <- dplyr::mutate(`airquality`, `Temp` = (`Temp`-32)*5/9) #convert the
 airquality <- dplyr::mutate(`airquality`, `month` = `Month`)
 ```
 
-```{r}
+```{r eval = FALSE}
 ?datasets::airquality #getting the necessary background information
+```
+
+There is some data missing in the "Ozone" and "Solar.R" columns. This must be taken into account if one makes further analysis with this two variables. Especially for further interpretations it is important to not ignore this data. In this Report i made calculations and illustration with "Solar.R" and "Temp".
+
+```{r message = FALSE}
+visdat::vis_miss(airquality) # Checking if any data in the dataframe is missing
 ```
 
 ### Figure 1 - Geom_point
