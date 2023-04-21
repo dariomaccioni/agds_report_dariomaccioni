@@ -4,13 +4,6 @@ author: "Dario Maccioni"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-```{r}
-here::i_am("vignettes/Report.Rmd")
-```
-
-```{r}
-library(here)
-```
 
 # AGDS Report
 
@@ -25,8 +18,6 @@ list.files("../data") # list all files in the folder needed
 ```
 
 ```{r message = FALSE}
-here::here("data", "data_csv_repexercise.csv")
-here::here("data/data_csv_repexercise.csv")
 database_s1 <- readr::read_csv("../data/data_csv_repexercise.csv") # read and import the .csv dataset and creating a new table in R
 ```
 
@@ -79,10 +70,6 @@ all_phases <- dplyr::select(all_phases, `Phases`, `log_response_ratio_mean`) #br
 knitr::kable(all_phases) #presenting the results as table
 ```
 
-
-```{r}
-here::dr_here()
-```
 
 
 
