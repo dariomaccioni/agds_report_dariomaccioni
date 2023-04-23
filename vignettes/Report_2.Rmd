@@ -5,11 +5,13 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-# Report Exercise 2
+# AGDS Report
+
+## Report Exercise 2
 
 The goal of this Report is to tell a story with the airquality dataset (can be downloaded directly in R). With different statistical metrics, a hypothesis and different publishable figures one should illustrate and desribe the data given. The Report is structured in three main Tasks.
 
-## Task 1 - Download the dataset from R and illustrate three figures
+### Task 1 - Download the dataset from R and illustrate three figures
 
 ```{r}
 airquality <- datasets::airquality # Loading the dataset into R
@@ -28,7 +30,7 @@ There is some data missing in the "Ozone" and "Solar.R" columns. This must be ta
 visdat::vis_miss(airquality) # Checking if any data in the dataframe is missing
 ```
 
-### Figure 1 - Geom_point
+#### Figure 1 - Geom_point
 
 ```{r}
 airquality <- airquality |>
@@ -53,7 +55,7 @@ ggplot(
   ggplot2::facet_wrap(~Month) #Combining the chart with the column Month so that the labels of the Month are displayed
 ```
 
-### Figure 2 - Geom_point
+#### Figure 2 - Geom_point
 
 ```{r}
 library(ggplot2)
@@ -69,7 +71,7 @@ ggplot(
   theme_classic()
 ```
 
-### Figure 3 - stat_density_2d
+#### Figure 3 - stat_density_2d
 
 ```{r}
 library(ggplot2)
@@ -92,13 +94,13 @@ ggplot(
   scale_y_continuous(expand = c(0, 0))
 ```
 
-## Task 2 - Description of the data with 3 statistical metrics included
+### Task 2 - Description of the data with 3 statistical metrics included
 
 The three illustration shown in this report display the relationship between Temperature and Solar radiation. Both metrics where measured in New York in 1973 for the months may to september. One problem that comes up is the location where the measurement took place. In this case the Solar radiation was measured at the Central Park and the Temperature was measured at the La Guardia Airport. To analyse the correlation between both metrics it is important have the same conditions for the measurement. Another Problem is that the Solar radiation was measured between 0800 and 1200. In this period it is not usual to have a maximum daily temperature. The maximum daily temperature is most likely reached during the afternoon. A third Problem is, that the temperature in the dataframe is given as the maximum daily temperature. To have more accurate data it would have been better to display the whole dataframe with a hourly interval. Then it would be possible to calculate the mean temperature for each day of the month. Another statistical metric would be the median to deal better with outliers. To see how much the data scatters one could use the standard deviation. This statistical metric shows how distant a value is from the mean. If the standard deviation is large then the data scatters a lot. If the standard deviation is small, this means that the most part of the data is near the mean. This 3 statistical metric could be used in order to have more detailed data and to display a more accurate illustration. 
 
 I choosed this 3 metrics to show the variation between the temperature data and the solar radiation data. It is also important to know if there are any outliers which could influence our data. The standard deviation of the solar radiation is very high. In this case one must analyse the data to find out what the problems are. A possible main problem could be a cloud which prevents the radiation to come to earth. Therefore the data is influenced and maybe this is the reason why the standard deviation is that high. So basically these metrics show how the data scatters and if there are any anomalies. If this is the case, one could think about reasons why it is like that. 
 
-### Statistical Metrics for Temperature
+#### Statistical Metrics for Temperature
 
 In this case the median and the mean are very near to each other. This could mean that there are not many to none outliers. Probably they do not differ that much because there are only maximum values used. If the dataframe would include all temperature during a day the data would differ much more. The standard deviation is also small which means that the data is near the mean.
 
@@ -108,7 +110,7 @@ median(airquality$Temp, na.rm = TRUE)
 sd(airquality$Temp, na.rm = TRUE)
 ```
 
-### Statistical Metrics for Solar radiation
+#### Statistical Metrics for Solar radiation
 
 If the median is significantly larger than the mean, this could mean that there are some outliers which influence the mean. The standard deviation in this case shows that the data scatters a lot.
 
@@ -118,7 +120,7 @@ median(airquality$Solar.R, na.rm = TRUE)
 sd(airquality$Solar.R, na.rm = TRUE)
 ```
 
-## Task 3 - Hypothesis and interpretation
+### Task 3 - Hypothesis and interpretation
 
 _My hypothese for the displayed illustration:_
 
