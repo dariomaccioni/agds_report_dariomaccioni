@@ -5,4 +5,118 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+# Report Exercise 4
 
+## Task 1
+
+```{r message = FALSE}
+half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
+```
+
+```{r}
+visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is missing
+```
+
+```{r}
+half_hourly_fluxes_op1 <- stats::na.omit(half_hourly_fluxes_new_order)
+```
+
+
+```{r}
+# Define the response variable
+response_var <- "GPP_NT_VUT_REF"
+
+# Initialize a vector to store the selected predictors
+selected_predictors <- c()
+
+# Initialize a list to store the intermediate models
+models <- list()
+
+# Loop through the predictors
+for (i in 1:ncol(half_hourly_fluxes_op1)) {
+  
+  # Initialize a variable to store the best predictor
+  best_predictor <- NULL
+  
+  # Initialize a variable to store the lowest AIC
+  lowest_aic <- Inf
+  
+  # Loop through the remaining predictors
+  for (j in setdiff(names(half_hourly_fluxes_op1)[-1], selected_predictors)) {
+    
+    # Create a formula object for the current predictor
+    candidate_formula <- as.formula(paste(response_var, "~", paste(c(selected_predictors, j), collapse = "+")))
+    
+    # Fit a linear model with the current predictor added
+    candidate_lm <- lm(candidate_formula, data = half_hourly_fluxes_op1)
+    
+    # Check if the AIC is lower than the current lowest AIC
+    if (AIC(candidate_lm) < lowest_aic) {
+      best_predictor <- j
+      lowest_aic <- AIC(candidate_lm)
+    }
+    
+    # Store the intermediate model
+    models[[paste(c(selected_predictors, j), collapse = "+")]] <- candidate_lm
+  }
+  
+  # Add the best predictor to the selected predictors
+  selected_predictors <- c(selected_predictors, best_predictor)
+  
+  # Print the selected predictors and the AIC
+  cat("Selected predictors:", paste(selected_predictors, collapse = "+"), "\n")
+  cat("AIC:", lowest_aic, "\n")
+}
+
+# Initialize a data frame to store the model statistics
+model_stats <- data.frame(Model = character(),
+                           AIC = numeric(),
+                           Adj_R2 = numeric(),
+                           R2 = numeric(),
+                           stringsAsFactors = FALSE)
+
+# Loop through the intermediate models and extract the statistics
+for (i in seq_along(models)) {
+  
+  # Extract the model formula and AIC
+  model_formula <- formula(models[[i]])
+  model_aic <- AIC(models[[i]])
+  
+  # Extract the model summary and extract the R-squared and adjusted R-squared
+  model_summary <- summary(models[[i]])
+  model_adj_r2 <- summary(models[[i]])$adj.r.squared
+  model_r2 <- summary(models[[i]])$r.squared
+  
+  # Add the model statistics to the data frame
+  model_stats <- rbind(model_stats, data.frame(Model = as.character(model_formula),
+                                               AIC = model_aic,
+                                               Adj_R2 = model_adj_r2,
+                                               R2 = model_r2,
+                                               stringsAsFactors = FALSE))
+}
+
+# Print the model statistics table
+print(model_stats)
+
+# Sort the model statistics data frame by ascending AIC values
+model_stats <- model_stats[order(model_stats$AIC), ]
+
+# Print the top row of the model statistics data frame
+cat("Best model based on AIC:\n")
+print(model_stats[1, ])
+
+# Sort the model statistics data frame by descending adjusted R-squared values
+model_stats <- model_stats[order(-model_stats$Adj_R2), ]
+
+# Print the top row of the model statistics data frame
+cat("Best model based on adjusted R-squared:\n")
+print(model_stats[1, ])
+
+# Sort the model statistics data frame by descending R-squared values
+model_stats <- model_stats[order(-model_stats$R2), ]
+
+# Print the top row of the model statistics data frame
+cat("Best model based on R-squared:\n")
+print(model_stats[1, ])
+
+```
