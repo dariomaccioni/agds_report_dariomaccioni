@@ -5,50 +5,115 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-# Report Exercise 4
+# AGDS Report
 
-## Task 1
+## Report Exercise 4
+
+In this Report a stepwise forward regression is used as analysis tool to present GPP as a function of different predictors. The regression is first shown as a simple loop and later as a simplified version with the integrated Step function of RStudio. As a help a data set named half_hourly_fluxes for the ecosystem is used. A first attempt tries to implement the evaluation of all bivariate models (single predictor). In another step, i try to show the full stepwise forward regression using all predictors to find the best model. The Report is structured in 4 Tasks with an individual short description in the title.
+
+### Task 1 - Loading the data into R and creating new tables
 
 ```{r message = FALSE}
 half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
 ```
+
+As shown down below, approximately 5.7% of the whole data set are missing values. If one looks a the different predictors one sees that as a example the LW_IN_F_MDS Predictor has nearly 50% missing values. This is important for further analysis. This report shows also how to deal with missing values. Therefor the bivariate models but also the full stepwise forward regression are made with a dataset where the missing values are deleted. Nevertheless i also included an option on how to do a stepwise forward regression with the missing values in the data set to illustrate the different results.
 
 ```{r}
 visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is missing
 ```
 
 ```{r}
-half_hourly_fluxes_op1 <- stats::na.omit(half_hourly_fluxes_new_order)
+half_hourly_fluxes_new_order <- dplyr::select(half_hourly_fluxes,`GPP_NT_VUT_REF`, everything()) # moving the column of the response variable (GPP) to position one (the first column from left)
 ```
 
-
 ```{r}
-# Define the response variable
-response_var <- "GPP_NT_VUT_REF"
+half_hourly_fluxes_fixed <- stats::na.omit(half_hourly_fluxes_new_order) # Deleting all rows with at least one value which equals "NA"
+```
 
-# Initialize a vector to store the selected predictors
-selected_predictors <- c()
+### Task 2 - Stepwsise forward regression (bivariate models in a loop)
 
-# Initialize a list to store the intermediate models
-models <- list()
+This loop creates a data frame which includes all bivariate models and their AIC, r.squared and adjusted r.squared already sorted by lowest AIC on top (ascending order).
 
-# Loop through the predictors
-for (i in 1:ncol(half_hourly_fluxes_op1)) {
+```{r results='hide'}
+dependent_var <- "GPP_NT_VUT_REF" # defining the dependent variable
+
+results <- list() # Definint a list which stores the whole results
+
+# Loop which goes through all predictors and builds bivariate models
+for (predictor in c("none", "siteid", "TIMESTAMP", "TA_F", "SW_IN_F", "LW_IN_F", "VPD_F", 
+                    "PA_F", "P_F", "WS_F", "TA_F_MDS", "SW_IN_F_MDS", "LW_IN_F_MDS",
+                    "VPD_F_MDS", "CO2_F_MDS", "PPFD_IN", "USTAR")) {
   
-  # Initialize a variable to store the best predictor
+  if (predictor == "none") {
+    # Building an condition if the predictor == none
+    formula_string <- paste0(dependent_var, " ~ 1")
+  } else {
+    # Building a condition if the predictor is anything else than none
+    formula_string <- paste0(dependent_var, " ~ ", predictor)
+  }
+  
+  formula <- as.formula(formula_string) # Creating a formula object
+  
+  model <- lm(formula, data = half_hourly_fluxes_fixed) # Fit the linear model
+  
+  results[[predictor]] <- c(formula_string, AIC(model), summary(model)$r.squared, summary(model)$adj.r.squared) # making a list which stores the bivariate models and their AIC, r.squared and adjusted r.squared
+}
+
+results_df <- as.data.frame(do.call(rbind, results)) # Converting the list into a dataframe
+
+colnames(results_df) <- c("formula", "AIC", "r_squared", "adj_r_squared") # renaming the columns for better understanding
+
+results_df$AIC <- as.numeric(results_df$AIC) # Converting AIC to numeric
+
+results_df <- results_df[order(results_df$AIC), ] # Sorting the data frame by AIC value in ascending order
+
+print(results_df) # printing the results
+```
+
+The Plot shows the best fitting predictor for bivariate models. As it can be seen on the plot, there is a positive Relationship between this to parameters as it seems that if the PPFD_In increases the GPP increases as well (can be seen on the blue regression line). What also can be seen is that the data scatters a lot (high variability), therefor it is difficult to say that the GPP only depends on the PPFD_IN. There could be other reasons and options which influence the GPP. 
+
+```{r message=FALSE}
+library(ggplot2)
+
+ggplot(half_hourly_fluxes_fixed, aes(x = PPFD_IN, y = GPP_NT_VUT_REF)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  xlab("PPFD_IN") +
+  ylab("GPP") +
+  ggtitle("Bivariate Scatter Plot of PPFD_IN and GPP")
+
+```
+
+### Task 3 - Completed Stepwise forward Regression
+
+This loop creates a data frame which includes all possible models and their AIC, r.squared, adjusted r.squared. 
+
+```{r message=FALSE}
+library(broom)
+library(dplyr)
+library(tidyr)
+dependent2_var <- "GPP_NT_VUT_REF" # Defining the dependent variable
+
+selected_predictors <- c() # creating a vector which stores all selected predictors
+
+models <- list() # making a list which stores all generated models
+
+# a loop which goes through all predictors
+for (i in 1:ncol(half_hourly_fluxes_fixed)) {
+  
+  # Defining a variable to store the best predictor
   best_predictor <- NULL
   
-  # Initialize a variable to store the lowest AIC
+  # Defining a variable to store the lowest AIC
   lowest_aic <- Inf
   
-  # Loop through the remaining predictors
-  for (j in setdiff(names(half_hourly_fluxes_op1)[-1], selected_predictors)) {
+  # loop thorugh the others predictors as the best predictor is already defined
+  for (j in setdiff(names(half_hourly_fluxes_fixed)[-1], selected_predictors)) {
     
-    # Create a formula object for the current predictor
-    candidate_formula <- as.formula(paste(response_var, "~", paste(c(selected_predictors, j), collapse = "+")))
+    candidate_formula <- as.formula(paste(dependent2_var, "~", paste(c(selected_predictors, j), collapse = "+"))) # Create a formula object for the current predictor. The current predictor should connect to other predictors by a "+"
     
-    # Fit a linear model with the current predictor added
-    candidate_lm <- lm(candidate_formula, data = half_hourly_fluxes_op1)
+    candidate_lm <- lm(candidate_formula, data = half_hourly_fluxes_fixed) # Fit a linear model with the current predictor added
     
     # Check if the AIC is lower than the current lowest AIC
     if (AIC(candidate_lm) < lowest_aic) {
@@ -56,67 +121,108 @@ for (i in 1:ncol(half_hourly_fluxes_op1)) {
       lowest_aic <- AIC(candidate_lm)
     }
     
-    # Store the intermediate model
-    models[[paste(c(selected_predictors, j), collapse = "+")]] <- candidate_lm
+    models[[paste(c(selected_predictors, j), collapse = "+")]] <- candidate_lm # Storing the models created in the list i already made
   }
   
-  # Add the best predictor to the selected predictors
-  selected_predictors <- c(selected_predictors, best_predictor)
-  
-  # Print the selected predictors and the AIC
-  cat("Selected predictors:", paste(selected_predictors, collapse = "+"), "\n")
-  cat("AIC:", lowest_aic, "\n")
+  selected_predictors <- c(selected_predictors, best_predictor)  # Adding the best predictor to the selected predictors
 }
-
-# Initialize a data frame to store the model statistics
+# Creating a data frame which contains all the models statistics (AIC, r.squared, adjusted r.squared)
 model_stats <- data.frame(Model = character(),
                            AIC = numeric(),
                            Adj_R2 = numeric(),
                            R2 = numeric(),
                            stringsAsFactors = FALSE)
 
-# Loop through the intermediate models and extract the statistics
+# Loop through the models created and extract the selected statistics
 for (i in seq_along(models)) {
   
-  # Extract the model formula and AIC
+  # Extracting the model formula and AIC. Also extracting the model summary and extract the R-squared and adjusted R-squared
   model_formula <- formula(models[[i]])
   model_aic <- AIC(models[[i]])
-  
-  # Extract the model summary and extract the R-squared and adjusted R-squared
   model_summary <- summary(models[[i]])
   model_adj_r2 <- summary(models[[i]])$adj.r.squared
   model_r2 <- summary(models[[i]])$r.squared
   
-  # Add the model statistics to the data frame
+ # Adding the statistics of the models created to a dataframe
   model_stats <- rbind(model_stats, data.frame(Model = as.character(model_formula),
                                                AIC = model_aic,
                                                Adj_R2 = model_adj_r2,
                                                R2 = model_r2,
                                                stringsAsFactors = FALSE))
 }
-
-# Print the model statistics table
-print(model_stats)
-
-# Sort the model statistics data frame by ascending AIC values
-model_stats <- model_stats[order(model_stats$AIC), ]
-
-# Print the top row of the model statistics data frame
-cat("Best model based on AIC:\n")
-print(model_stats[1, ])
-
-# Sort the model statistics data frame by descending adjusted R-squared values
-model_stats <- model_stats[order(-model_stats$Adj_R2), ]
-
-# Print the top row of the model statistics data frame
-cat("Best model based on adjusted R-squared:\n")
-print(model_stats[1, ])
-
-# Sort the model statistics data frame by descending R-squared values
-model_stats <- model_stats[order(-model_stats$R2), ]
-
-# Print the top row of the model statistics data frame
-cat("Best model based on R-squared:\n")
-print(model_stats[1, ])
-
 ```
+
+Now that the dataframe with all the statistics of the models is created this code below tries to visualize the dataframe a little bit better. The problem is that model_stats creates 3 rows for each model. This code tries to prevent this, and generates one row for each model.
+
+```{r}
+library(dplyr)
+library(base)
+# Creating a new data frame for model_stats. Group by Formula and summarize by concatenating the values
+one_row_model <- model_stats %>%
+  group_by(Model) %>%
+  summarize(Predictors = paste(Model, collapse = " "),
+            AIC = first(AIC),
+            Adj_R2= first(Adj_R2),
+            R2 = first(R2))
+one_row_model[1] <- NULL
+```
+
+Now that the data frame contains one row for each model. This code extract the best fitting model and prints it to visualize it.
+
+```{r}
+one_row_model <- models[[which.min(sapply(models, AIC))]] # Extract the model with the lowest AIC
+
+formula(one_row_model) # Extract the formula for the best model
+```
+
+#### Comparison of created loop with function "step"
+
+This loop generates the best fitting model using the step function of RStudio. The result can be seen with formula(model_step). It shows the same "best fitting model" as the loop made in Task 3. Therefor my loop worked. 
+
+```{r eval = FALSE}
+Fit_model <- lm(GPP_NT_VUT_REF ~ 1, data = half_hourly_fluxes_fixed) # Fit the linear model
+
+full_model <- lm(GPP_NT_VUT_REF ~ ., data = half_hourly_fluxes_fixed) # Creating the full model with all predictors
+stats::formula(full_model)
+```
+
+```{r eval = FALSE}
+model_step <- step(FitStart, direction = "forward", scope = formula(full_model)) # starting the full stepwise forward regression with the step function
+```
+
+```{r}
+model_step <- models[[which.min(sapply(models, AIC))]] # Extract the model with the lowest AIC
+
+formula(model_step) # Extract the formula for the best model
+```
+
+#### Discussion
+
+Nevertheless one should always remember that these models created by the loop and the step function do not include missing values. The two methods end with the same result. Therefore one should decide which code to use. In my opinion i would probably use the step function because it enables a short coding and a clear overview of the report. The created loop is nice to learn what the step function does "behind the scene", and is therefore probably better for learning purposes. Which model is used at the end is finally a quesion about purpose. 
+
+Using the Stepwise forward regression to select predictors can result in problems. This because the regression could lead to overfitting. This regression tends to select predictors which are not necessarily important for the analysis. The final model therefore may not generalize well to new data. This should be kept in mind.
+
+### Task 4 - Dealing with missing values (an other option for regression)
+
+Dealing with missing values is always difficult. For Analysis one should always keep in mind that excluding missing values could influence the outcoming results. In this report the stepwise forward regression represented in Task 3 was made without missing values. This short Task 4 tries to implement a code which includes missing values by estimating them from the already existing values. The resulst are hidden as it takes to much time to knit it. If you want to run this code, please feel free to fork it and knit it on your own :)
+
+```{r eval=FALSE}
+models <- list()
+
+for (i in 1:5) {
+  imputed_data <- mice(half_hourly_fluxes, m = 1, maxit = 50, seed = i) 
+  deal_miss_value <- lm(GPP_NT_VUT_REF ~ ., data = complete(imputed_data))
+  step_miss_value <- step(lm(GPP_NT_VUT_REF ~ 1, data = complete(imputed_data)), 
+                       direction = "forward", scope = formula(deal_miss_value))
+  models[[i]] <- step_miss_value
+}
+```
+
+The best fitting model is a different one as the model created in Task 3. It seems like it does make a different whether i use missing values or not. Nevertheless imputing missing data can be helpful, if more data should be included. But one has to keep in mind that imputation introduces uncertainty into the analysis, as the imputed values do not really exist or are not really observed and therefore are different from the true values. This should be considered if further analysis is made.
+
+```{r eval=FALSE}
+best_model <- models[[which.min(sapply(models, AIC))]]
+formula(best_model)
+```
+
+
