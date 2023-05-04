@@ -1,5 +1,10 @@
 # make model evaluation into a function to reuse code
 eval_model <- function(mod, df_train, df_test){
+  # loading all packages needed
+  library(dplyr)
+  library(ggplot2)
+  library(yardstick)
+  library(cowplot)
   
   # add predictions to the data frames
   df_train <- df_train |> 
@@ -57,5 +62,4 @@ eval_model <- function(mod, df_train, df_test){
   return(out)
 }
 
-# linear regression model
-eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+
