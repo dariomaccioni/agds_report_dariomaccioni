@@ -1,0 +1,169 @@
+---
+title: "Report_6"
+author: "Dario Maccioni"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: yes
+    numbered: yes
+    theme: journal
+---
+
+# AGDS Report
+
+## Report Exercise 6
+
+### Task 1 - Data Visualization
+
+```{r message = FALSE, warning=FALSE}
+eco_flux_davos <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds/main/data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") # Loading the dataset (.csv) into R and creating a table
+```
+
+```{r message=FALSE, warning=FALSE}
+eco_flux_laegern <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds/main/data/FLX_CH-Lae_FLUXNET2015_FULLSET_DD_2004-2014_1-4.csv") # Loading the dataset (.csv) into R and creating a table
+```
+
+```{r}
+visdat::vis_miss(eco_flux_davos, warn_large_data = FALSE) # Checking if any data in the dataset is missing
+```
+
+```{r}
+visdat::vis_miss(eco_flux_laegern, warn_large_data = FALSE) # Checking if any data in the dataset is missing
+```
+
+### Task 2 - Machine Learning 2
+
+```{r}
+# Load the necessary libraries
+library(caret)
+library(tidyverse)
+
+
+# Split the data into training and testing sets for each site
+set.seed(1982)
+davos_split <- initial_split(eco_flux_davos, prop = 0.8, strata = "TIMESTAMP")
+davos_train <- training(davos_split)
+davos_test <- testing(davos_split)
+
+laegern_split <- initial_split(eco_flux_laegern, prop = 0.8, strata = "TIMESTAMP")
+laegern_train <- training(laegern_split)
+laegern_test <- testing(laegern_split)
+
+# Train and tune a KNN model for each site using the training set
+knn_davos <- train(GPP_NT_VUT_MEAN ~ ., data = davos_train, method = "knn",
+                   trControl = trainControl(method = "cv", number = 5),
+                   tuneLength = 10)
+knn_laegern <- train(GPP_NT_VUT_MEAN ~ ., data = laegern_train, method = "knn",
+                     trControl = trainControl(method = "cv", number = 5),
+                     tuneLength = 10)
+
+# Evaluate the model performance using the testing set
+davos_pred <- predict(knn_davos, newdata = davos_test)
+laegern_pred <- predict(knn_laegern, newdata = laegern_test)
+
+davos_metrics <- data.frame(MAE = MAE(davos_pred, davos_test$GPP_NT_VUT_MEAN),
+                            RMSE = RMSE(davos_pred, davos_test$GPP_NT_VUT_MEAN))
+laegern_metrics <- data.frame(MAE = MAE(laegern_pred, laegern_test$GPP_NT_VUT_MEAN),
+                              RMSE = RMSE(laegern_pred, laegern_test$GPP_NT_VUT_MEAN))
+
+cat("Davos MAE:", davos_metrics$MAE, "\n")
+cat("Davos RMSE:", davos_metrics$RMSE, "\n")
+cat("Laegern MAE:", laegern_metrics$MAE, "\n")
+cat("Laegern RMSE:", laegern_metrics$RMSE, "\n")
+
+```
+
+```{r}
+# Train a single KNN model using the pooled training data from both sites
+pooled_data <- rbind(davos_train, laegern_train)
+knn_pooled <- train(GPP_NT_VUT_MEAN ~ ., data = pooled_data, method = "k")
+
+```
+
+```{r}
+library(tidyverse)
+library(caret)
+
+
+
+# Add a site column to each dataset
+eco_flux_davos$site <- "Davos"
+eco_flux_laegern$site <- "Laegern"
+
+# Combine the datasets
+data <- bind_rows(eco_flux_davos, eco_flux_laegern)
+
+# Split the data into training and test sets
+set.seed(1982)
+train_index <- createDataPartition(data$GPP_NT_VUT_REF, p = 0.8, list = FALSE)
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+
+# Train the KNN model
+model <- train(GPP_NT_VUT_REF ~ ., data = train_data, method = "knn", trControl = trainControl(method = "cv"))
+
+# Evaluate the model on the test set
+test_pred <- predict(model, newdata = test_data)
+test_mse <- mean((test_pred - test_data$GPP_NT_VUT_REF)^2)
+test_rmse <- sqrt(test_mse)
+test_mae <- mean(abs(test_pred - test_data$NEE))
+
+# Print the test set metrics
+cat("Test set RMSE:", test_rmse, "\n")
+cat("Test set MAE:", test_mae, "\n")
+
+```
+
+```{r}
+
+library(tidyverse)
+library(caret)
+# Remove rows with missing values
+data <- na.omit(data)
+
+# Split the data into training and test sets
+set.seed(1982)
+train_index <- createDataPartition(data$NEE_CUT_REF, p = 0.8, list = FALSE)
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+
+# Train the KNN model
+model <- train(NEE_CUT_REF ~ ., data = train_data, method = "knn", trControl = trainControl(method = "cv"))
+
+# Evaluate the model on the test set
+test_pred <- predict(model, newdata = test_data)
+test_mse <- mean((test_pred - test_data$NEE_CUT_REF)^2)
+test_rmse <- sqrt(test_mse)
+test_mae <- mean(abs(test_pred - test_data$NEE))
+
+# Print the test set metrics
+cat("Test set RMSE:", test_rmse, "\n")
+cat("Test set MAE:", test_mae, "\n")
+
+```
+
+```{r}
+library(PreProcess)
+# Impute missing values using mean imputation
+pre_proc <- preProcess(train_data, method = "meanImpute")
+train_data_imputed <- predict(pre_proc, train_data)
+
+# Train the KNN model
+model <- train(GPP_NT_VUT_REF ~ ., data = train_data_imputed, method = "knn", trControl = trainControl(method = "cv"))
+
+# Impute missing values in the test set
+test_data_imputed <- predict(pre_proc, test_data)
+
+# Evaluate the model on the imputed test set
+test_pred <- predict(model, newdata = test_data_imputed)
+test_mse <- mean((test_pred - test_data$GPP_NT_VUT_REF)^2)
+test_rmse <- sqrt(test_mse)
+test_mae <- mean(abs(test_pred - test_data$NEE))
+
+# Print the test set metrics
+cat("Test set RMSE:", test_rmse, "\n")
+cat("Test set MAE:", test_mae, "\n")
+
+```
+

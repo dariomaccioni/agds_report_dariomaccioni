@@ -176,6 +176,5 @@ optimal_k <- k_values[which.min(mae_values)]
 cat("Optimal k value:", optimal_k, "\n")
 cat("MAE on test set for optimal k value:", get_mae(optimal_k)$mae_test, "\n")
 cat("MAE on training set for optimal k value:", get_mae(optimal_k)$mae_train, "\n")
-
 ```
 
