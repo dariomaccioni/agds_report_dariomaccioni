@@ -204,6 +204,7 @@ cat("The MAE on the test set is", test_mae)
 
 ```
 
+#### function of the code
 
 ```{r}
 evaluate_knn <- function(k) {
@@ -240,4 +241,78 @@ evaluate_knn <- function(k) {
 
 ```
 
+#### adding the train plot
+
+```{r}
+library(rsample)
+library(tidyr)
+library(caret)
+library(recipes)
+library(ggplot2)
+
+# Define function to train and evaluate KNN model
+get_mae <- function(k) {
+  # Data splitting
+  set.seed(1982)  # for reproducibility
+  split <- rsample::initial_split(half_hourly_fluxes_fixed, prop = 0.7, strata = "VPD_F")
+  half_hourly_fluxes_train <- rsample::training(split)
+  half_hourly_fluxes_test <- rsample::testing(split)
+  
+  # Model and pre-processing formulation, use all variables but LW_IN_F
+  pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                        data = half_hourly_fluxes_train |> drop_na()) |> 
+    recipes::step_BoxCox(all_predictors()) |> 
+    recipes::step_center(all_numeric(), -all_outcomes()) |>
+    recipes::step_scale(all_numeric(), -all_outcomes())
+
+  # Fit KNN model
+  mod_knn <- caret::train(
+    pp, 
+    data = half_hourly_fluxes_train, 
+    method = "knn",
+    trControl = caret::trainControl(method = "none"),
+    tuneGrid = data.frame(k = k),
+    metric = "MAE"
+  )
+
+  # Evaluate model on test set
+  new_data <- drop_na(half_hourly_fluxes_test)
+  pred <- predict(mod_knn, newdata = new_data)
+  obs <- new_data$GPP_NT_VUT_REF
+  mae <- caret::MAE(pred, obs)
+  
+  # Evaluate model on training set
+  pred_train <- predict(mod_knn, newdata = drop_na(half_hourly_fluxes_train))
+  obs_train <- drop_na(half_hourly_fluxes_train)$GPP_NT_VUT_REF
+  mae_train <- caret::MAE(pred_train, obs_train)
+  
+  return(list("mae_train" = mae_train, "mae_test" = mae))
+}
+
+# Evaluate KNN model for different values of k
+k_values <- c(1:30)
+mae_values <- sapply(k_values, function(k) get_mae(k)$mae_test)
+mae_train_values <- sapply(k_values, function(k) get_mae(k)$mae_train)
+
+# Visualize MAE as a function of k
+df <- data.frame(k = k_values, MAE_test = mae_values, MAE_train = mae_train_values)
+ggplot(df, aes(x = k)) + 
+  geom_line(aes(y = MAE_test, color = "Test")) + 
+  geom_line(aes(y = MAE_train, color = "Train")) +
+  geom_point(aes(y = MAE_test)) + 
+  geom_point(aes(y = MAE_train)) + 
+  xlab("k") + 
+  ylab("MAE") +
+  scale_color_manual(name = "Data set", values = c("red", "blue")) +
+  geom_hline(yintercept = test_mae, color = "red") +
+  annotate("text", x = best_k, y = test_mae + 0.5, label = "Test MAE", color = "red")
+
+# Find value of k that minimizes MAE
+best_k <- k_values[which.min(mae_values)]
+cat("The best value of k is", best_k)
+
+# Evaluate KNN model with best_k on test set
+test_mae
+
+```
 
