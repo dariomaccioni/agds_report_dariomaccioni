@@ -2,8 +2,19 @@
 title: "Report_5"
 author: "Dario Maccioni"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document: 
+    toc: yes
+    toc_float: yes
+    numbered: yes
+    theme: journal
 ---
+
+# AGDS Report
+
+## Report Exercise 5
+
+### Task 1 - Data Visualization
 
 ```{r message = FALSE}
 half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
@@ -17,9 +28,7 @@ visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is mi
 half_hourly_fluxes_fixed <- stats::na.omit(half_hourly_fluxes) # Deleting all rows with at least one value which equals "NA"
 ```
 
-
-
-```{r}
+```{r message = FALSE, warning=FALSE}
 library(ggplot2)
 # Data cleaning: looks ok, no obviously bad data
 # no long tail, therefore no further target engineering
@@ -28,7 +37,10 @@ half_hourly_fluxes |>
   geom_histogram()
 ```
 
-```{r}
+
+### Task 2 - Creating a linear regression model and a KNN model
+
+```{r message = FALSE, warning=FALSE}
 library(rsample)
 library(tidyr)
 library(caret)
@@ -66,21 +78,27 @@ mod_knn <- caret::train(
 )
 ```
 
-```{r}
+### Task 3 - Loading the Function created on a .R file
+```{r message = FALSE, warning=FALSE}
 source("../Functions/large_file.R")
 ```
 
-```{r}
+
+### Task 4 - Visualising the 2 models with the function created before
+
+```{r warning=FALSE, message=FALSE}
 
 # Linear Regression
-eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+eval_model(mod = mod_lm, df_train = half_hourly_fluxes_train, df_test = half_hourly_fluxes_test)
 
 ```
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 # KNN
-eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+eval_model(mod = mod_knn, df_train = half_hourly_fluxes_train, df_test = half_hourly_fluxes_test)
 ```
+
+### Task 5 - Visualising observed and modelled GPP for KNN and Linear Regressio
 
 ```{r}
 library(ggplot2)
@@ -107,4 +125,119 @@ ggplot(observed, aes(x = Date)) +
   ggtitle("Observed and Modelled GPP for KNN")
 
 ```
+
+### Task 6 - the role of k
+
+#### Task 6.1 - creating a hypothesis
+
+Based on the understanding of KNN i got of this lecture, i would suppose that if the k-value approaches to 1, the model has a lower variance but a higher bias, which results in a lower R2 value on the test and training models. The reason why this is the case, is that if k=1, the model will only use a single neighbor. Therefore the model is just dependent of this neighbor (lower variance because just focusing on one variable). This leads to overfitting of the training model which means it will not generalize well to new data. Therefore the R2 of the test model will decrease.
+
+If the k-value approaches to N, i suppose the model will have a higher variance and a lower bias, because it focuses on all variable which are available. Therefore the model will generalize well to new data. Also the R2 value increases on the test model.
+
+For the information i got from the MAE i suppose, that if the k-value approaches to 1, the MAE will be higher, because the model overfits. If the k-value approaches to N, the MAE will be lower on the test model, because the model adapts well to new data.
+
+Overall i think it is difficult to find the optimal k-value, because it depends on the dataset but also on the model created.
+
+#### Task 6.2 - testing the hypothesis
+
+```{r}
+library(rsample)
+library(tidyr)
+library(caret)
+library(recipes)
+library(ggplot2)
+
+# Define function to train and evaluate KNN model
+get_mae <- function(k) {
+  # Data splitting
+  set.seed(1982)  # for reproducibility
+  split <- rsample::initial_split(half_hourly_fluxes_fixed, prop = 0.7, strata = "VPD_F")
+  half_hourly_fluxes_train <- rsample::training(split)
+  half_hourly_fluxes_test <- rsample::testing(split)
+  
+  # Model and pre-processing formulation, use all variables but LW_IN_F
+  pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                        data = half_hourly_fluxes_train |> drop_na()) |> 
+    recipes::step_BoxCox(all_predictors()) |> 
+    recipes::step_center(all_numeric(), -all_outcomes()) |>
+    recipes::step_scale(all_numeric(), -all_outcomes())
+
+  # Fit KNN model
+  mod_knn <- caret::train(
+    pp, 
+    data = half_hourly_fluxes_train, 
+    method = "knn",
+    trControl = caret::trainControl(method = "none"),
+    tuneGrid = data.frame(k = k),
+    metric = "MAE"
+  )
+
+  # Evaluate model on test set
+  new_data <- drop_na(half_hourly_fluxes_test)
+  pred <- predict(mod_knn, newdata = new_data)
+  obs <- new_data$GPP_NT_VUT_REF
+  mae <- caret::MAE(pred, obs)
+  return(mae)
+}
+
+# Evaluate KNN model for different values of k
+k_values <- c(1:30)
+mae_values <- sapply(k_values, get_mae)
+
+# Visualize MAE as a function of k
+df <- data.frame(k = k_values, MAE = mae_values)
+ggplot(df, aes(x = k, y = MAE)) + 
+  geom_line() + 
+  geom_point() + 
+  xlab("k") + 
+  ylab("MAE") +
+  geom_hline(yintercept = test_mae, color = "red") +
+  annotate("text", x = best_k, y = test_mae + 0.5, label = "Test MAE", color = "red")
+
+# Find value of k that minimizes MAE
+best_k <- k_values[which.min(mae_values)]
+cat("The best value of k is", best_k)
+
+# Evaluate KNN model with best_k on test set
+test_mae <- get_mae(best_k)
+cat("The MAE on the test set is", test_mae)
+
+```
+
+
+```{r}
+evaluate_knn <- function(k) {
+  # Data splitting
+  set.seed(1982)  # for reproducibility
+  split <- rsample::initial_split(half_hourly_fluxes_fixed, prop = 0.7, strata = "VPD_F")
+  half_hourly_fluxes_train <- rsample::training(split)
+  half_hourly_fluxes_test <- rsample::testing(split)
+  
+  # Model and pre-processing formulation, use all variables but LW_IN_F
+  pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                        data = half_hourly_fluxes_train |> drop_na()) |> 
+    recipes::step_BoxCox(all_predictors()) |> 
+    recipes::step_center(all_numeric(), -all_outcomes()) |>
+    recipes::step_scale(all_numeric(), -all_outcomes())
+
+  # Fit KNN model
+  mod_knn <- caret::train(
+    pp, 
+    data = half_hourly_fluxes_train, 
+    method = "knn",
+    trControl = caret::trainControl(method = "none"),
+    tuneGrid = data.frame(k = k),
+    metric = "MAE"
+  )
+
+  # Evaluate model on test set
+  new_data <- drop_na(half_hourly_fluxes_test)
+  pred <- predict(mod_knn, newdata = new_data)
+  obs <- new_data$GPP_NT_VUT_REF
+  mae <- caret::MAE(pred, obs)
+  return(mae)
+}
+
+```
+
 
