@@ -14,11 +14,15 @@ output:
 
 ## Report Exercise 5
 
+In this Report Exercise implements a comparison of linear Regression and KNN models. Both were evaluated for a training set and a test set. The goal of this Report is to understand the observed differences between these two models. The Report is structured in 6 different Tasks.
+
 ### Task 1 - Data Visualization
 
 ```{r message = FALSE}
 half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
 ```
+
+As shown down below, approximately 5.7% of the whole data set are missing values. If one looks a the different predictors one sees that as a example the LW_IN_F_MDS Predictor has nearly 50% missing values. This is important for further analysis. 
 
 ```{r}
 visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is missing
@@ -28,37 +32,37 @@ visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is mi
 half_hourly_fluxes_fixed <- stats::na.omit(half_hourly_fluxes) # Deleting all rows with at least one value which equals "NA"
 ```
 
+This chart is to show if there is any "bad data" in the data frame. As it can be seen, there is no long tail and the data looks ok. There is no obvious "bad data". 
+
 ```{r message = FALSE, warning=FALSE}
 library(ggplot2)
-# Data cleaning: looks ok, no obviously bad data
-# no long tail, therefore no further target engineering
 half_hourly_fluxes |> 
   ggplot(aes(x = GPP_NT_VUT_REF, y = ..count..)) + 
   geom_histogram()
 ```
 
-
-### Task 2 - Creating a linear regression model and a KNN model
+### Task 2 - Creating and visualising a linear regression model and a KNN model
 
 ```{r message = FALSE, warning=FALSE}
 library(rsample)
 library(tidyr)
 library(caret)
 library(recipes)
-# Data splitting
-set.seed(1982)  # for reproducibility
+
+# splitting the data in a training (70%) and test set (30%)
+set.seed(2000) # just for reproducibility reasons
 split <- rsample::initial_split(half_hourly_fluxes_fixed, prop = 0.7, strata = "VPD_F")
 half_hourly_fluxes_train <- rsample::training(split)
 half_hourly_fluxes_test <- rsample::testing(split)
 
-# Model and pre-processing formulation, use all variables but LW_IN_F
+# pre_processing and ignoring the LW_IN_F variable because it has to much missing value and its probably not critcal for predicting GPP
 pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
                       data = half_hourly_fluxes_train |> drop_na()) |> 
   recipes::step_BoxCox(all_predictors()) |> 
   recipes::step_center(all_numeric(), -all_outcomes()) |>
   recipes::step_scale(all_numeric(), -all_outcomes())
 
-# Fit linear regression model
+# making a linear Regression model
 mod_lm <- caret::train(
   pp, 
   data = half_hourly_fluxes_train |> drop_na(), 
@@ -67,7 +71,7 @@ mod_lm <- caret::train(
   metric = "RMSE"
 )
 
-# Fit KNN model
+# making a KNN model
 mod_knn <- caret::train(
   pp, 
   data = half_hourly_fluxes_train, 
@@ -78,19 +82,19 @@ mod_knn <- caret::train(
 )
 ```
 
-### Task 3 - Loading the Function created on a .R file
+#### Task 2.1 - Loading the Function created on a .R file
+
+A folder named "Functions" was created to put large codes in it to simplify coding and the readflow. The code can be extract by the function source().
+
 ```{r message = FALSE, warning=FALSE}
 source("../Functions/large_file.R")
 ```
 
-
-### Task 4 - Visualising the 2 models with the function created before
+#### Task 2.2 - Visualising the 2 models with the function created before
 
 ```{r warning=FALSE, message=FALSE}
-
 # Linear Regression
 eval_model(mod = mod_lm, df_train = half_hourly_fluxes_train, df_test = half_hourly_fluxes_test)
-
 ```
 
 ```{r warning=FALSE, message=FALSE}
@@ -98,26 +102,35 @@ eval_model(mod = mod_lm, df_train = half_hourly_fluxes_train, df_test = half_hou
 eval_model(mod = mod_knn, df_train = half_hourly_fluxes_train, df_test = half_hourly_fluxes_test)
 ```
 
+#### 2.3 - Interpretation of the observed differences in the context of the bias-variance trade-off
+
+__Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?__
+
+__Why is the does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?__
+
+__How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?__
+
+
 ### Task 5 - Visualising observed and modelled GPP for KNN and Linear Regressio
 
 ```{r}
 library(ggplot2)
 
-# create a dataframe with the dates and observed GPP
+# creating a dataframe with the dates and observed GPP
 observed <- data.frame(Date = half_hourly_fluxes_fixed$TIMESTAMP, GPP = half_hourly_fluxes_fixed$GPP_NT_VUT_REF)
 
-# add columns with modelled GPP for linear regression and KNN
+# adding columns with modelled GPP for linear regression and KNN
 observed$lm <- predict(mod_lm, newdata = half_hourly_fluxes_fixed)
 observed$knn <- predict(mod_knn, newdata = half_hourly_fluxes_fixed)
 
-# create a line plot for observed and modelled GPP for linear regression
+# creating a line plot for observed and modelled GPP for linear regression
 ggplot(observed, aes(x = Date)) +
   geom_line(aes(y = GPP, color = "Observed")) +
   geom_line(aes(y = lm, color = "Linear Regression")) +
   labs(x = "Date", y = "GPP", color = "Model") +
   ggtitle("Observed and Modelled GPP for Linear Regression")
 
-# create a line plot for observed and modelled GPP for KNN
+# creating a line plot for observed and modelled GPP for KNN
 ggplot(observed, aes(x = Date)) +
   geom_line(aes(y = GPP, color = "Observed")) +
   geom_line(aes(y = knn, color = "KNN")) +
