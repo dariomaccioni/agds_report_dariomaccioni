@@ -5,13 +5,11 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-# AGDS Report
-
-## Report Exercise 1
+# AGDS Report Exercise 1
 
 In this report data of soil organic carbon measurements in experiments are shown. The goal of this report is to manually import a CSV file and then summarise the different columns of the dataframe to finally calculate the log_response_ratio_mean for 3 different phases (early, mid and late). The Report is structured in three Tasks.
 
-### Task 1 - List and import files needed
+## Task 1 - List and import files needed
 
 ```{r results='hide'}
 list.files("../data") # list all files in the folder needed
@@ -27,7 +25,7 @@ There is some data missing in the "Sample date (year)" column. This must be take
 visdat::vis_miss(database_s1) # Checking if any data in the dataframe is missing
 ```
 
-### Task 2 - Calculate the mean log_response_ratio for each year
+## Task 2 - Calculate the mean log_response_ratio for each year
 
 ```{r}
 sample_date_RR <- dplyr::mutate(`database_s1`, log_response_ratio = log(`increased CO2`/`ambient CO2`)) #adding a new column to the table and calculation of the log_response_ratio for each observation
@@ -43,7 +41,7 @@ sample_date_yearly <- sample_date_RR |> #working with the created table
 knitr::kable(sample_date_yearly[1:10,]) #presenting the results as table
 ```
 
-### Task 3 - Creating 3 Phases with mean log_response_ratio
+## Task 3 - Creating 3 Phases with mean log_response_ratio
 
 ```{r}
 Phase_1 <- dplyr::filter(sample_date_RR, `Time (years)` <3) |> #Filter early phase (<3) and creating a new table (Phase_1)

@@ -10,19 +10,17 @@ output:
     theme: journal
 ---
 
-# AGDS Report
+# AGDS Report Exercise 5
 
-## Report Exercise 5
+This Report Exercise implements a comparison of linear Regression and KNN models. Both were evaluated for a training set and a test set. The goal of this Report is to understand the observed differences between these two models. The Report is structured in 4 different Tasks with subchapter.
 
-In this Report Exercise implements a comparison of linear Regression and KNN models. Both were evaluated for a training set and a test set. The goal of this Report is to understand the observed differences between these two models. The Report is structured in 6 different Tasks.
-
-### Task 1 - Data Visualization
+## Task 1 - Data Visualization
 
 ```{r message = FALSE}
 half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
 ```
 
-As shown down below, approximately 5.7% of the whole data set are missing values. If one looks a the different predictors one sees that as a example the LW_IN_F_MDS Predictor has nearly 50% missing values. This is important for further analysis. 
+As shown down below, approximately 5.7% of the whole data set are missing values. If one looks at the different predictors one sees that as a example the LW_IN_F_MDS Predictor has nearly 50% missing values. This is important to notice for further analysis. 
 
 ```{r}
 visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is missing
@@ -32,7 +30,7 @@ visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is mi
 half_hourly_fluxes_fixed <- stats::na.omit(half_hourly_fluxes) # Deleting all rows with at least one value which equals "NA"
 ```
 
-This chart is to show if there is any "bad data" in the data frame. As it can be seen, there is no long tail and the data looks ok. There is no obvious "bad data". 
+This chart shows if there is any "bad data" in the data frame. As it can be seen, there is no long tail and the data looks ok. There is no obvious "bad data". 
 
 ```{r message = FALSE, warning=FALSE}
 library(ggplot2)
@@ -41,7 +39,7 @@ half_hourly_fluxes |>
   geom_histogram()
 ```
 
-### Task 2 - Creating and visualising a linear regression model and a KNN model
+## Task 2 - Creating and visualising a linear regression model and a KNN model
 
 ```{r message = FALSE, warning=FALSE}
 library(rsample)
@@ -82,15 +80,15 @@ mod_knn <- caret::train(
 )
 ```
 
-#### Task 2.1 - Loading the Function created on a .R file
+### Task 2.1 - Loading the Function created on a .R file
 
 A folder named "Functions" was created to put large codes in it to simplify coding and the readflow. The code can be extract by the function source().
 
 ```{r message = FALSE, warning=FALSE}
-source("../Functions/large_file.R")
+source("../Functions/large_file.R") # loading the function created for Task 2 and Task 4. File contains two different functions.
 ```
 
-#### Task 2.2 - Visualising the 2 models with the function created before
+### Task 2.2 - Visualising the 2 models with the function created before
 
 ```{r warning=FALSE, message=FALSE}
 # Linear Regression
@@ -102,16 +100,23 @@ eval_model(mod = mod_lm, df_train = half_hourly_fluxes_train, df_test = half_hou
 eval_model(mod = mod_knn, df_train = half_hourly_fluxes_train, df_test = half_hourly_fluxes_test)
 ```
 
-#### 2.3 - Interpretation of the observed differences in the context of the bias-variance trade-off
+### 2.3 - Interpretation of the observed differences in the context of the bias-variance trade-off
 
 __Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?__
 
-__Why is the does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?__
+KNN models are more flexible than linear Regression models when it comes to overfitting. If a KNN is used in general the variance gets much higher compared to linear Regression (in Task 3 visualization). Because of this difference linear regression models have a lower flexibility, which can lead to higher bias in the model. Furthermore KNN models are complex models and linear regression models are models which assume a linear relationship between the predictors and the dependent variable. A big difference between training and test data could mean that the model generalizes well to new data, whereas if the difference is low it could mean that the model is nearly the same as the training data and it does not generalize well to new data.
+
+__Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?__
+
+The evaluation on the test set could indicate a better model performance of the KNN model than the linear regression model because the KNN is better able to capture the underlying structure of the data and looks beyond the linear relationship between predictor and dependent variable, as the linear regression model does. It is also important to choose a good number of neighbors because a poor number could influence the model performance.
 
 __How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?__
 
+It is very difficult to position these models in this spectrum, because both have their benefits and trade-offs. The KNN model has a higher variance and a lower bias, whereas the linear regression model comes with a lower variance and a high bias. The low bias of the KNN models is because they do not make assumptions about the relationship between the predictors and the dependent variable. The high variance makes the KNN model more vulnerable to overfitting. On the other hand the linear regression model make assumption about the linear relationship between predictors and dependent variable which increases the bias and decreases the variance. This leads to a simpler model which is less vulnerable to overfitting. So therefor it is difficult to position the two models in the spectrum. 
 
-### Task 5 - Visualising observed and modelled GPP for KNN and Linear Regressio
+## Task 3 - Visualising observed and modelled GPP for KNN and Linear Regression
+
+In this task the observed and modelled GPP for KNN and linear Regression are visualized with two charts. The charts cover all available data.
 
 ```{r}
 library(ggplot2)
@@ -139,9 +144,11 @@ ggplot(observed, aes(x = Date)) +
 
 ```
 
-### Task 6 - the role of k
+## Task 4 - The role of k
 
-#### Task 6.1 - creating a hypothesis
+With the knowledge gained from the previous chapter, a analysis of the role of k is made. For this a hypothesis is formulated on how the R2 and the MAE are effected by a k which is near 1 and a k which equals N.
+
+### Task 4.1 - Creating a hypothesis
 
 Based on the understanding of KNN i got of this lecture, i would suppose that if the k-value approaches to 1, the model has a lower variance but a higher bias, which results in a lower R2 value on the test and training models. The reason why this is the case, is that if k=1, the model will only use a single neighbor. Therefore the model is just dependent of this neighbor (lower variance because just focusing on one variable). This leads to overfitting of the training model which means it will not generalize well to new data. Therefore the R2 of the test model will decrease.
 
@@ -151,11 +158,11 @@ For the information i got from the MAE i suppose, that if the k-value approaches
 
 Overall i think it is difficult to find the optimal k-value, because it depends on the dataset but also on the model created.
 
-#### Task 6.2 - testing the hypothesis
+### Task 4.2 - Testing the hypothesis
 
-#### function of the code
+Down below is a visualization which impelemnts the MAE to the model complexity (k value). So a "region" of underfitting can be seen at the point where the test error and the train error are both high. On the other hand a "region" of overfitting can be seen at the point where the test error starts to increase. The optimal model complexity is where the test error is lowest and the difference between test and train error is small. So with higher k value the model complexity increases to the point where the test error starts to increase and the model overfitts, whereas when the k-value is low the model underfitts (on the left side of the visualization), because test and train error are high.
 
-```{r}
+```{r warning=FALSE}
 library(rsample)
 library(tidyr)
 library(caret)
@@ -179,10 +186,10 @@ ggplot(df, aes(x = k)) +
   scale_color_manual(name = "Data set", values = c("red", "blue"))
 ```
 
-#### Finding the opitmal k-value
+### 4.3 - Finding the opitmal k-value
 
 ```{r warning=FALSE}
-# Find the optimal k
+# Finding the optimal k-value out of "k_values"
 optimal_k <- k_values[which.min(mae_values)]
 
 # Print optimal k value and MAE on test and training sets

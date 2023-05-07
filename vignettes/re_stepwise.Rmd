@@ -5,13 +5,11 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-# AGDS Report
-
-## Report Exercise 4
+# AGDS Report Exercise 4
 
 In this Report a stepwise forward regression is used as analysis tool to present GPP as a function of different predictors. The regression is first shown as a simple loop and later as a simplified version with the integrated Step function of RStudio. As a help a data set named half_hourly_fluxes for the ecosystem is used. A first attempt tries to implement the evaluation of all bivariate models (single predictor). In another step, i try to show the full stepwise forward regression using all predictors to find the best model. The Report is structured in 4 Tasks with an individual short description in the title.
 
-### Task 1 - Loading the data into R and creating new tables
+## Task 1 - Loading the data into R and creating new tables
 
 ```{r message = FALSE}
 half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
@@ -31,7 +29,7 @@ half_hourly_fluxes_new_order <- dplyr::select(half_hourly_fluxes,`GPP_NT_VUT_REF
 half_hourly_fluxes_fixed <- stats::na.omit(half_hourly_fluxes_new_order) # Deleting all rows with at least one value which equals "NA"
 ```
 
-### Task 2 - Stepwsise forward regression (bivariate models in a loop)
+## Task 2 - Stepwsise forward regression (bivariate models in a loop)
 
 This loop creates a data frame which includes all bivariate models and their AIC, r.squared and adjusted r.squared already sorted by lowest AIC on top (ascending order).
 
@@ -85,7 +83,7 @@ ggplot(half_hourly_fluxes_fixed, aes(x = PPFD_IN, y = GPP_NT_VUT_REF)) +
 
 ```
 
-### Task 3 - Completed Stepwise forward Regression
+## Task 3 - Completed Stepwise forward Regression
 
 This loop creates a data frame which includes all possible models and their AIC, r.squared, adjusted r.squared. 
 
@@ -175,7 +173,7 @@ one_row_model <- models[[which.min(sapply(models, AIC))]] # Extract the model wi
 formula(one_row_model) # Extract the formula for the best model
 ```
 
-#### Comparison of created loop with function "step"
+### Task 3.1 - Comparison of created loop with function "step"
 
 This loop generates the best fitting model using the step function of RStudio. The result can be seen with formula(model_step). It shows the same "best fitting model" as the loop made in Task 3. Therefor my loop worked. 
 
@@ -196,13 +194,13 @@ model_step <- models[[which.min(sapply(models, AIC))]] # Extract the model with 
 formula(model_step) # Extract the formula for the best model
 ```
 
-#### Discussion
+### Task 3.2 - Discussion
 
 Nevertheless one should always remember that these models created by the loop and the step function do not include missing values. The two methods end with the same result. Therefore one should decide which code to use. In my opinion i would probably use the step function because it enables a short coding and a clear overview of the report. The created loop is nice to learn what the step function does "behind the scene", and is therefore probably better for learning purposes. Which model is used at the end is finally a quesion about purpose. 
 
 Using the Stepwise forward regression to select predictors can result in problems. This because the regression could lead to overfitting. This regression tends to select predictors which are not necessarily important for the analysis. The final model therefore may not generalize well to new data. This should be kept in mind.
 
-### Task 4 - Dealing with missing values (an other option for regression)
+## Task 4 - Dealing with missing values (an other option for regression)
 
 Dealing with missing values is always difficult. For Analysis one should always keep in mind that excluding missing values could influence the outcoming results. In this report the stepwise forward regression represented in Task 3 was made without missing values. This short Task 4 tries to implement a code which includes missing values by estimating them from the already existing values. The resulst are hidden as it takes to much time to knit it. If you want to run this code, please feel free to fork it and knit it on your own :)
 
