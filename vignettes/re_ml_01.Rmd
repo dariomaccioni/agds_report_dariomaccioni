@@ -186,7 +186,7 @@ ggplot(df, aes(x = k)) +
   scale_color_manual(name = "Data set", values = c("red", "blue"))
 ```
 
-### 4.3 - Finding the opitmal k-value
+### 4.3 - Finding the optimal k-value
 
 ```{r warning=FALSE}
 # Finding the optimal k-value out of "k_values"

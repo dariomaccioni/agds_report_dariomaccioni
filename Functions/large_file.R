@@ -1,5 +1,4 @@
 
-
 # make model evaluation into a function to reuse code
 eval_model <- function(mod, df_train, df_test){
   # loading all packages needed
@@ -7,7 +6,7 @@ eval_model <- function(mod, df_train, df_test){
   library(ggplot2)
   library(yardstick)
   library(cowplot)
-  
+
   # add predictions to the data frames
   df_train <- df_train |> 
     drop_na()
