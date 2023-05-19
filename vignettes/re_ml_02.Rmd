@@ -10,11 +10,13 @@ output:
     theme: journal
 ---
 
-# AGDS Report
+# AGDS Report Exercise 6
 
-## Report Exercise 6
+```{r}
+source("../Functions/eval_model_2.R")
+```
 
-### Task 1 - Data Visualization
+## Task 1 - Data Visualization
 
 ```{r message = FALSE, warning=FALSE}
 eco_flux_davos <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds/main/data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") # Loading the dataset (.csv) into R and creating a table
@@ -24,146 +26,307 @@ eco_flux_davos <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds
 eco_flux_laegern <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds/main/data/FLX_CH-Lae_FLUXNET2015_FULLSET_DD_2004-2014_1-4.csv") # Loading the dataset (.csv) into R and creating a table
 ```
 
+### Task 1.1 - Cleaning and splitting the Davos Dataset
+
+```{r}
+library(lubridate)
+library(dplyr)
+eco_flux_davos <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds/main/data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") |>  
+  
+  # select only the variables we are interested in
+  dplyr::select(TIMESTAMP,
+                GPP_NT_VUT_REF,    # the target
+                ends_with("_QC"),  # quality control info
+                ends_with("_F"),   # includes all all meteorological covariates
+                -contains("JSB")   # weird useless variable
+                ) |>
+
+  # convert to a nice date object
+  dplyr::mutate(TIMESTAMP = ymd(TIMESTAMP)) |>
+
+  # set all -9999 to NA
+  mutate(across(where(is.numeric), ~na_if(., -9999))) |>
+  
+  # retain only data based on >=80% good-quality measurements
+  # overwrite bad data with NA (not dropping rows)
+  dplyr::mutate(GPP_NT_VUT_REF = ifelse(NEE_VUT_REF_QC < 0.8, NA, GPP_NT_VUT_REF),
+                TA_F           = ifelse(TA_F_QC        < 0.8, NA, TA_F),
+                SW_IN_F        = ifelse(SW_IN_F_QC     < 0.8, NA, SW_IN_F),
+                LW_IN_F        = ifelse(LW_IN_F_QC     < 0.8, NA, LW_IN_F),
+                VPD_F          = ifelse(VPD_F_QC       < 0.8, NA, VPD_F),
+                PA_F           = ifelse(PA_F_QC        < 0.8, NA, PA_F),
+                P_F            = ifelse(P_F_QC         < 0.8, NA, P_F),
+                WS_F           = ifelse(WS_F_QC        < 0.8, NA, WS_F)) |> 
+
+  # drop QC variables (no longer needed)
+  dplyr::select(-ends_with("_QC"))
+```
+
 ```{r}
 visdat::vis_miss(eco_flux_davos, warn_large_data = FALSE) # Checking if any data in the dataset is missing
+```
+
+```{r message = FALSE, warning=FALSE}
+library(ggplot2)
+eco_flux_davos |> 
+  ggplot(aes(x = GPP_NT_VUT_REF, y = ..count..)) + 
+  geom_histogram()
+```
+
+```{r}
+# splitting the data in a training (80%) and test set (20%)
+set.seed(1982) # just for reproducibility reasons
+split <- rsample::initial_split(eco_flux_davos, prop = 0.8)
+flux_davos_train <- rsample::training(split)
+flux_davos_test <- rsample::testing(split)
+```
+
+### Task 1.2 - Cleaning the Laegern Dataset
+
+```{r}
+library(lubridate)
+library(dplyr)
+eco_flux_laegern <- readr::read_csv("https://raw.githubusercontent.com/stineb/agds/main/data/FLX_CH-Lae_FLUXNET2015_FULLSET_DD_2004-2014_1-4.csv") |>  
+  
+  # select only the variables we are interested in
+  dplyr::select(TIMESTAMP,
+                GPP_NT_VUT_REF,    # the target
+                ends_with("_QC"),  # quality control info
+                ends_with("_F"),   # includes all all meteorological covariates
+                -contains("JSB")   # weird useless variable
+                ) |>
+
+  # convert to a nice date object
+  dplyr::mutate(TIMESTAMP = ymd(TIMESTAMP)) |>
+
+  # set all -9999 to NA
+  mutate(across(where(is.numeric), ~na_if(., -9999))) |>
+  
+  # retain only data based on >=80% good-quality measurements
+  # overwrite bad data with NA (not dropping rows)
+  dplyr::mutate(GPP_NT_VUT_REF = ifelse(NEE_VUT_REF_QC < 0.8, NA, GPP_NT_VUT_REF),
+                TA_F           = ifelse(TA_F_QC        < 0.8, NA, TA_F),
+                SW_IN_F        = ifelse(SW_IN_F_QC     < 0.8, NA, SW_IN_F),
+                LW_IN_F        = ifelse(LW_IN_F_QC     < 0.8, NA, LW_IN_F),
+                VPD_F          = ifelse(VPD_F_QC       < 0.8, NA, VPD_F),
+                PA_F           = ifelse(PA_F_QC        < 0.8, NA, PA_F),
+                P_F            = ifelse(P_F_QC         < 0.8, NA, P_F),
+                WS_F           = ifelse(WS_F_QC        < 0.8, NA, WS_F)) |> 
+
+  # drop QC variables (no longer needed)
+  dplyr::select(-ends_with("_QC"))
 ```
 
 ```{r}
 visdat::vis_miss(eco_flux_laegern, warn_large_data = FALSE) # Checking if any data in the dataset is missing
 ```
 
-### Task 2 - Machine Learning 2
+```{r message = FALSE, warning=FALSE}
+library(ggplot2)
+eco_flux_laegern |> 
+  ggplot(aes(x = GPP_NT_VUT_REF, y = ..count..)) + 
+  geom_histogram()
+```
 
 ```{r}
-# Load the necessary libraries
-library(caret)
+# splitting the data in a training (80%) and test set (20%)
+set.seed(1982) # just for reproducibility reasons
+split <- rsample::initial_split(eco_flux_laegern, prop = 0.8)
+flux_laegern_train <- rsample::training(split)
+flux_laegern_test <- rsample::testing(split)
+```
+
+## Task 2 - Deleting irrelevant data
+
+### Task 2.1 - Deleting LW_IN_F for all train and test sets
+
+```{r}
+flux_davos_test$LW_IN_F <- NULL # Deleting the LW_IN_F row for the Davos test set
+```
+
+```{r}
+flux_davos_train$LW_IN_F <- NULL # Deleting the LW_IN_F row for the Davos train set
+```
+
+```{r}
+flux_laegern_test$LW_IN_F <- NULL # Deleting the LW_IN_F row for the Laegern test set
+```
+
+```{r}
+flux_laegern_train$LW_IN_F <- NULL # Deleting the LW_IN_F row for the Laegern train set
+```
+
+### Task 2.2 - Deleting P_F for the Laegern Dataset
+
+```{r}
+flux_davos_test$P_F <- NULL # Deleting the P_F row for the Davos test set
+```
+
+```{r}
+flux_davos_train$P_F <- NULL # Deleting the P_F row for the Davos train set
+```
+
+```{r}
+flux_laegern_test$P_F <- NULL # Deleting the P_F row for the Laegern test set
+```
+
+```{r}
+flux_laegern_train$P_F <- NULL # Deleting the P_F row for the Laegern train set
+```
+
+
+### Task 2.3 - Deleting all missing values for both datasets
+
+```{r}
+flux_davos_test <- stats::na.omit(flux_davos_test) # Deleting all rows with at least one value which equals "NA"
+```
+
+```{r}
+flux_davos_train <- stats::na.omit(flux_davos_train) # Deleting all rows with at least one value which equals "NA"
+```
+
+```{r}
+flux_laegern_test <- stats::na.omit(flux_laegern_test) # Deleting all rows with at least one value which equals "NA"
+```
+
+```{r}
+flux_laegern_train <- stats::na.omit(flux_laegern_train) # Deleting all rows with at least one value which equals "NA"
+```
+
+## Task 3 - Defining a model for both training sets
+
+```{r}
+# The same model formulation is in the previous chapter
+model_davos_train <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + PA_F + WS_F + TA_F, 
+                      data = flux_davos_train) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+```
+
+```{r}
+# The same model formulation is in the previous chapter
+model_laegern_train <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + PA_F + WS_F + TA_F, 
+                      data = flux_laegern_train) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+```
+
+
+## Task 4 - Using the caret function to find the best fitting model for KNN and Lm
+
+### Task 4.1 - Caret function for Davos dataset (KNN and lm)
+
+```{r}
 library(tidyverse)
-
-
-# Split the data into training and testing sets for each site
-set.seed(1982)
-davos_split <- initial_split(eco_flux_davos, prop = 0.8, strata = "TIMESTAMP")
-davos_train <- training(davos_split)
-davos_test <- testing(davos_split)
-
-laegern_split <- initial_split(eco_flux_laegern, prop = 0.8, strata = "TIMESTAMP")
-laegern_train <- training(laegern_split)
-laegern_test <- testing(laegern_split)
-
-# Train and tune a KNN model for each site using the training set
-knn_davos <- train(GPP_NT_VUT_MEAN ~ ., data = davos_train, method = "knn",
-                   trControl = trainControl(method = "cv", number = 5),
-                   tuneLength = 10)
-knn_laegern <- train(GPP_NT_VUT_MEAN ~ ., data = laegern_train, method = "knn",
-                     trControl = trainControl(method = "cv", number = 5),
-                     tuneLength = 10)
-
-# Evaluate the model performance using the testing set
-davos_pred <- predict(knn_davos, newdata = davos_test)
-laegern_pred <- predict(knn_laegern, newdata = laegern_test)
-
-davos_metrics <- data.frame(MAE = MAE(davos_pred, davos_test$GPP_NT_VUT_MEAN),
-                            RMSE = RMSE(davos_pred, davos_test$GPP_NT_VUT_MEAN))
-laegern_metrics <- data.frame(MAE = MAE(laegern_pred, laegern_test$GPP_NT_VUT_MEAN),
-                              RMSE = RMSE(laegern_pred, laegern_test$GPP_NT_VUT_MEAN))
-
-cat("Davos MAE:", davos_metrics$MAE, "\n")
-cat("Davos RMSE:", davos_metrics$RMSE, "\n")
-cat("Laegern MAE:", laegern_metrics$MAE, "\n")
-cat("Laegern RMSE:", laegern_metrics$RMSE, "\n")
-
-```
-
-```{r}
-# Train a single KNN model using the pooled training data from both sites
-pooled_data <- rbind(davos_train, laegern_train)
-knn_pooled <- train(GPP_NT_VUT_MEAN ~ ., data = pooled_data, method = "k")
-
-```
-
-```{r}
-library(tidyverse)
+library(recipes)
 library(caret)
 
-
-
-# Add a site column to each dataset
-eco_flux_davos$site <- "Davos"
-eco_flux_laegern$site <- "Laegern"
-
-# Combine the datasets
-data <- bind_rows(eco_flux_davos, eco_flux_laegern)
-
-# Split the data into training and test sets
 set.seed(1982)
-train_index <- createDataPartition(data$GPP_NT_VUT_REF, p = 0.8, list = FALSE)
-train_data <- data[train_index, ]
-test_data <- data[-train_index, ]
-
-# Train the KNN model
-model <- train(GPP_NT_VUT_REF ~ ., data = train_data, method = "knn", trControl = trainControl(method = "cv"))
-
-# Evaluate the model on the test set
-test_pred <- predict(model, newdata = test_data)
-test_mse <- mean((test_pred - test_data$GPP_NT_VUT_REF)^2)
-test_rmse <- sqrt(test_mse)
-test_mae <- mean(abs(test_pred - test_data$NEE))
-
-# Print the test set metrics
-cat("Test set RMSE:", test_rmse, "\n")
-cat("Test set MAE:", test_mae, "\n")
-
+caret_knn_davos_train <- caret::train(model_davos_train, 
+                       data = flux_davos_train |> drop_na(), 
+                       method = "knn",
+                       trControl = caret::trainControl(method = "cv", number = 10),
+                       tuneGrid = data.frame(k = c(2, 5, 10, 15, 20, 25, 30, 35, 40, 60, 100)),
+                       metric = "MAE")
+print(caret_knn_davos_train)
 ```
 
 ```{r}
+caret_lm_davos_train <- caret::train(model_davos_train, 
+                       data = flux_davos_train |> drop_na(), 
+                       trControl = caret::trainControl(method = "none"),
+                       method = "lm"
+)
+```
 
-library(tidyverse)
-library(caret)
-# Remove rows with missing values
-data <- na.omit(data)
+### Task 4.2 - Caret Function for Laegern dataset (KNN and lm)
 
-# Split the data into training and test sets
-set.seed(1982)
-train_index <- createDataPartition(data$NEE_CUT_REF, p = 0.8, list = FALSE)
-train_data <- data[train_index, ]
-test_data <- data[-train_index, ]
-
-# Train the KNN model
-model <- train(NEE_CUT_REF ~ ., data = train_data, method = "knn", trControl = trainControl(method = "cv"))
-
-# Evaluate the model on the test set
-test_pred <- predict(model, newdata = test_data)
-test_mse <- mean((test_pred - test_data$NEE_CUT_REF)^2)
-test_rmse <- sqrt(test_mse)
-test_mae <- mean(abs(test_pred - test_data$NEE))
-
-# Print the test set metrics
-cat("Test set RMSE:", test_rmse, "\n")
-cat("Test set MAE:", test_mae, "\n")
-
+```{r}
+caret_knn_laegern_train <- caret::train(model_laegern_train, 
+                       data = flux_laegern_train |> drop_na(), 
+                       method = "knn",
+                       trControl = caret::trainControl(method = "cv", number = 10),
+                       tuneGrid = data.frame(k = c(2, 5, 10, 15, 20, 25, 30, 35, 40, 60, 100)),
+                       metric = "MAE")
 ```
 
 ```{r}
-library(PreProcess)
-# Impute missing values using mean imputation
-pre_proc <- preProcess(train_data, method = "meanImpute")
-train_data_imputed <- predict(pre_proc, train_data)
+caret_lm_laegern_train <- caret::train(model_laegern_train, 
+                       data = flux_laegern_train |> drop_na(), 
+                       trControl = caret::trainControl(method = "none"),
+                       method = "lm"
+)
+```
 
-# Train the KNN model
-model <- train(GPP_NT_VUT_REF ~ ., data = train_data_imputed, method = "knn", trControl = trainControl(method = "cv"))
+## Task 5 - Within-site predictions
 
-# Impute missing values in the test set
-test_data_imputed <- predict(pre_proc, test_data)
+### Task 5.1 - KNN/lm Davos (within-site)
 
-# Evaluate the model on the imputed test set
-test_pred <- predict(model, newdata = test_data_imputed)
-test_mse <- mean((test_pred - test_data$GPP_NT_VUT_REF)^2)
-test_rmse <- sqrt(test_mse)
-test_mae <- mean(abs(test_pred - test_data$NEE))
+```{r}
 
-# Print the test set metrics
-cat("Test set RMSE:", test_rmse, "\n")
-cat("Test set MAE:", test_mae, "\n")
+par(mfrow=c(1,1))
 
+eval_model_2(mod_1 = caret_knn_davos_train, df_train = flux_davos_train, df_test = flux_davos_test, mod_2 = caret_lm_davos_train, df_train2 = flux_davos_train, df_test2 = flux_davos_test)
+
+```
+
+### Task 5.2 - KNN/lm Laegern (within-site)
+
+```{r}
+eval_model_2(mod_1 = caret_knn_laegern_train, df_train = flux_laegern_train, df_test = flux_laegern_test, mod_2 = caret_lm_laegern_train, df_train2 = flux_laegern_train, df_test2 = flux_laegern_test)
+```
+
+## Task 6 - across-site predictions
+
+### Task 6.1 - KNN/lm Davos (across-site)
+
+```{r}
+eval_model_2(mod_1 = caret_knn_davos_train, df_train = flux_davos_train, df_test = flux_laegern_test, mod_2 = caret_lm_davos_train, df_train2 = flux_davos_train, df_test2 = flux_laegern_test)
+```
+
+### Task 6.3 - KNN/lm Laegern (across-site)
+
+```{r}
+eval_model_2(mod_1 = caret_knn_laegern_train, df_train = flux_laegern_train, df_test = flux_davos_test, mod_2 = caret_lm_laegern_train, df_train2 = flux_laegern_train, df_test2 = flux_davos_test)
+```
+
+## Task 7 - Pooling
+
+### Task 7.1 - Pooling the training sets and the test sets together
+
+```{r}
+pool_dav_lae_train <- rbind(flux_davos_train, flux_laegern_train)
+```
+
+```{r}
+pool_dav_lae_test <- rbind(flux_davos_test, flux_laegern_test)
+```
+
+### Task 7.2 - Creating a model for the pooled training sets
+
+```{r}
+model_pool_train <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + PA_F + WS_F + TA_F, 
+                      data = pool_dav_lae_train) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+```
+
+### Task 7.3 - Training the best lm model for pooled training data
+
+```{r}
+caret_lm_pool_train <- caret::train(model_pool_train, 
+                       data = pool_dav_lae_train |> drop_na(), 
+                       method = "lm",
+                       trControl = caret::trainControl(method = "none"))
+```
+
+### Task 7.4 - lm Laegern/Davos (within-site)
+
+```{r}
+source("../Functions/large_file.R")
+```
+
+```{r}
+eval_model(mod = caret_lm_pool_train, df_train = pool_dav_lae_train, df_test = pool_dav_lae_test)
 ```
 
