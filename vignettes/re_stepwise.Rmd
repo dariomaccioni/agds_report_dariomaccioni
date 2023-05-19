@@ -12,7 +12,7 @@ In this Report a stepwise forward regression is used as analysis tool to present
 ## Task 1 - Loading the data into R and creating new tables
 
 ```{r message = FALSE}
-half_hourly_fluxes <- readr::read_csv("https://raw.githubusercontent.com/geco-bern/agds/main/data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
+half_hourly_fluxes <- readr::read_csv("../data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
 ```
 
 As shown down below, approximately 5.7% of the whole data set are missing values. If one looks a the different predictors one sees that as a example the LW_IN_F_MDS Predictor has nearly 50% missing values. This is important for further analysis. This report shows also how to deal with missing values. Therefor the bivariate models but also the full stepwise forward regression are made with a dataset where the missing values are deleted. Nevertheless i also included an option on how to do a stepwise forward regression with the missing values in the data set to illustrate the different results.
@@ -36,7 +36,7 @@ This loop creates a data frame which includes all bivariate models and their AIC
 ```{r results='hide'}
 dependent_var <- "GPP_NT_VUT_REF" # defining the dependent variable
 
-results <- list() # Definint a list which stores the whole results
+results <- list() # Defining a list which stores the whole results
 
 # Loop which goes through all predictors and builds bivariate models
 for (predictor in c("none", "siteid", "TIMESTAMP", "TA_F", "SW_IN_F", "LW_IN_F", "VPD_F", 
@@ -51,22 +51,22 @@ for (predictor in c("none", "siteid", "TIMESTAMP", "TA_F", "SW_IN_F", "LW_IN_F",
     formula_string <- paste0(dependent_var, " ~ ", predictor)
   }
   
-  formula <- as.formula(formula_string) # Creating a formula object
+  formula_01 <- as.formula(formula_string) # Creating a formula object
   
-  model <- lm(formula, data = half_hourly_fluxes_fixed) # Fit the linear model
+  model <- lm(formula_01, data = half_hourly_fluxes_fixed) # Fit the linear model
   
   results[[predictor]] <- c(formula_string, AIC(model), summary(model)$r.squared, summary(model)$adj.r.squared) # making a list which stores the bivariate models and their AIC, r.squared and adjusted r.squared
 }
 
-results_df <- as.data.frame(do.call(rbind, results)) # Converting the list into a dataframe
+results_final <- as.data.frame(do.call(rbind, results)) # Converting the list into a dataframe
 
-colnames(results_df) <- c("formula", "AIC", "r_squared", "adj_r_squared") # renaming the columns for better understanding
+colnames(results_final) <- c("formula", "AIC", "r_squared", "adj_r_squared") # renaming the columns for better understanding
 
-results_df$AIC <- as.numeric(results_df$AIC) # Converting AIC to numeric
+results_final$AIC <- as.numeric(results_final$AIC) # Converting AIC to numeric
 
-results_df <- results_df[order(results_df$AIC), ] # Sorting the data frame by AIC value in ascending order
+results_final <- results_final[order(results_final$AIC), ] # Sorting the data frame by AIC value in ascending order
 
-print(results_df) # printing the results
+print(results_final) # printing the results
 ```
 
 The Plot shows the best fitting predictor for bivariate models. As it can be seen on the plot, there is a positive Relationship between this to parameters as it seems that if the PPFD_In increases the GPP increases as well (can be seen on the blue regression line). What also can be seen is that the data scatters a lot (high variability), therefor it is difficult to say that the GPP only depends on the PPFD_IN. There could be other reasons and options which influence the GPP. 
