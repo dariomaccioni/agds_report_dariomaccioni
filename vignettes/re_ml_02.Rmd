@@ -12,17 +12,29 @@ output:
 
 # AGDS Report Exercise 6
 
+This Report Exercise shows the training of a model with machine learning. The goal is to predict values of an second site (second station) from the model which was made with the values of the first site (first station). Therefore within-site and across-site predictions are implemented. The Report is structured in 6 Task which inlcude a little description in their title. I also made an extra file named ml_02_func which contains other Tasks and functions, to avoid a large html file.
+
+## Task 1 - Loading the Function made from the .R file created
+
 ```{r message=FALSE, warning=FALSE}
-source("../Functions/ml_02_func.R")
+source("../Functions/ml_02_func.R") # loading the function created in re_ml_02 for this report
 ```
 
-## Task 1 - Data visualization and checking missing values
+```{r message=FALSE, warning=FALSE}
+source("../Functions/ml_01_func.R") # loading the function created in re_ml_01 for Task 5 in this Report
+```
+
+## Task 2 - Data visualization and checking missing values
 
 __Davos Dataset__ 
+
+As shown down below, approximately 9.2% of the whole data set are missing values. If one looks at the different predictors one sees that as a example the LW_IN_F Predictor has 56% missing values. If the LW_IN_F variable is set to NA and later all rows with NA are removed, then the the half dataset (56%) would be removed. This is important to notice for further analysis. But as we know from the previous report exercise, the LW_IN_F predictor is not relevant for the prediction of GPP.
 
 ```{r}
 visdat::vis_miss(eco_flux_davos, warn_large_data = FALSE) # Checking if any data in the dataset is missing for Davos Dataset
 ```
+
+The Plot down below shows a hisogram to visualize the whole dataset and to see if there is bad data or outliers, etc... . As it can be seen there are no unusual patterns, nor outlier, nor gaps or any long tails. Therefore there is no obvious bad data, and the dataset looks okay on first sight.
 
 ```{r message = FALSE, warning=FALSE}
 # plotting the data to see if there is bad data
@@ -34,9 +46,13 @@ eco_flux_davos |>
 
 __Laegern Dataset__ 
 
+As shown down below, approximately 19.1% of the whole data set are missing values. If one looks at the different predictors one sees that as a example the P_F Predictor has 100% missing values. If the P_F variable is set to NA and later all rows with NA are removed, then the whole dataset would be removed. This is important to notice for further analysis. Therefore P_F column is removed before setting all missing values to NA.
+
 ```{r}
 visdat::vis_miss(eco_flux_laegern, warn_large_data = FALSE) # Checking if any data in the dataset is missing for the Laegern Dataset
 ```
+
+The Plot down below shows a hisogram to visualize the whole dataset and to see if there is bad data or outliers, etc... . As it can be seen there are no unusual patterns, nor outlier, nor gaps or any long tails. Therefore there is no obvious bad data, and the dataset looks okay on first sight.
 
 ```{r message = FALSE, warning=FALSE}
 # plotting the data to see if there is bad data
@@ -46,43 +62,88 @@ eco_flux_laegern |>
   geom_histogram()
 ```
 
-## Task 2 - Within-site predictions
+## Task 3 - Within-site predictions
 
-### Task 2.1 - KNN/lm Davos (within-site)
+### Task 3.1 - KNN/lm Davos (within-site)
+
+The Plot below shows the within-site predictions for Davos for the KNN and the linear regression model. For the test sets there is lower RMSE for the KNN than the Linear regression. High R2 value for KNN could mean that the model is flexible and can memorize the training set patterns. A low RMSE and low difference between training and test set could mean a good generalizability for the model.
 
 ```{r message=FALSE, warning=FALSE}
 eval_model_2(mod_1 = caret_knn_davos_train, df_train = flux_davos_train, df_test = flux_davos_test, mod_2 = caret_lm_davos_train, df_train2 = flux_davos_train, df_test2 = flux_davos_test)
 ```
 
-### Task 2.2 - KNN/lm Laegern (within-site)
+### Task 3.2 - KNN/lm Laegern (within-site)
+
+The Plot below shows the within-site predictions for Laegern for the KNN and the linear regression model. For the test sets there is lower RMSE for the KNN than the Linear regression. Both models have a higher RMSE in the test set than the training set. This could mean that the model overfits and does not adapt well to the test (new data) set. The RMSE is for both models higher than the within-site predictions for Davos. The difference of RMSE between training and test set is for both models not that high, which could mean a good generalizability.
 
 ```{r message=FALSE, warning=FALSE}
 eval_model_2(mod_1 = caret_knn_laegern_train, df_train = flux_laegern_train, df_test = flux_laegern_test, mod_2 = caret_lm_laegern_train, df_train2 = flux_laegern_train, df_test2 = flux_laegern_test)
 ```
 
-## Task 3 - across-site predictions
+## Task 4 - Across-site predictions
 
-### Task 3.1 - KNN/lm Davos (across-site)
+### Task 4.1 - KNN/lm Davos (across-site)
+
+The Plot below shows the across-site predictions for Davos for the KNN and the linear regression model. For the test sets there is lower RMSE for the KNN model than the linear regression model. RMSE of the test sets are massively higher than the RMSE of the training sets. This could mean overfitting of the training set and therefore bad performance on the test set.
 
 ```{r message=FALSE, warning=FALSE}
 eval_model_2(mod_1 = caret_knn_davos_train, df_train = flux_davos_train, df_test = flux_laegern_test, mod_2 = caret_lm_davos_train, df_train2 = flux_davos_train, df_test2 = flux_laegern_test)
 ```
 
-### Task 3.2 - KNN/lm Laegern (across-site)
+### Task 4.2 - KNN/lm Laegern (across-site)
+
+The Plot below shows the within-site predictions for Laegern for the KNN and the linear regression model. For the test sets there is lower RMSE for the KNN model than the linear regression model. RMSE of the test sets are higher than the RMSE of the training sets. This could mean overfitting of the training set and therefore bad performance on the test set. The difference of training and test set is lower for KNN model than linear regression model.
 
 ```{r message=FALSE, warning=FALSE}
 eval_model_2(mod_1 = caret_knn_laegern_train, df_train = flux_laegern_train, df_test = flux_davos_test, mod_2 = caret_lm_laegern_train, df_train2 = flux_laegern_train, df_test2 = flux_davos_test)
 ```
 
+### Comparison of within-site and across-site predictions
 
+It seems that the within-site predictions perform better for the test set than the across-site predictions. The within-site predictions have better RMSE values for KNN model. Across-site predictions have in general a high difference between test and training set for both models which could mean that these models tend to overfit. This can be assumed because we try to do across site predictions. For better analysis information about the two station have to be considered. Different information of the stations could lead to worse perfomance on the test set.
 
-## Task 4 - lm Laegern/Davos (within-site)
+## Task 5 - lm Laegern/Davos (within-site)
 
-```{r message=FALSE, warning=FALSE}
-source("../Functions/ml_01_func.R")
-```
+I decided to do a linear regression model to see how the linearity assumptions develop for this model, when pooling to different sites together.
+
+__How do the model metrics on the test set compare to the true out-of-sample setup above?__ 
+
+The RMSE of the test set is not that high and equals the RMSE of the training set. This could mean that the model fits and does not tend to overfit. Compared to the across-site predictions, these predictions tend to overfit as the RMSE of the test is massively higher than the training set. Therefore the pooled data seems to be more generalizable. If we compare the values of the RMSE of the pooled data and the across-site data, lower RMSE of the pooled data suggest a better predictions than the across-site.
+
+Problems that coud occur when pooling to sites together are that the two sites maybe have their own characteristics or patterns or maybe have their own little nuances which cannot be captured by pooling the two sites together. Therefore model accuracy could downgrade. If both sites have the same charactersitics then it could make sense to pool the data together, as it enables a more robust and generalizable model because it has more data to evaluate. But important is to make sure that the characteristics like climate, vegetation, altitude, etc.. are the same.
 
 ```{r message=FALSE, warning=FALSE}
 eval_model(mod = caret_lm_pool_train, df_train = pool_dav_lae_train, df_test = pool_dav_lae_test)
 ```
 
+## Task 6 - Interpretation of the sites characteristics
+
+__What are the differences in terms of climate, vegetation, altitude, etc. between the Davos and Laegern sites?__
+
+_Davos:_ 
+
+Elevation (m): 1639
+
+Mean Annual Temperature (°C): 2.8
+
+Mean Annual Precipitation (mm): 1062
+
+Vegetation IGBP: 	ENF (Evergreen Needleleaf Forests: Lands dominated by woody vegetation with a percent cover >60% and height exceeding 2 meters. Almost all trees remain green all year. Canopy is never without green foliage.)
+
+Source: https://doi.org/10.18140/FLX/1440132
+
+_Laegern:_
+
+Elevation (m): 689
+
+Mean Annual Temperature (°C): 8.3
+
+Mean Annual Precipitation (mm): 1100
+
+Vegetation IGBP: MF (Mixed Forests: Lands dominated by trees with a percent cover >60% and height exceeding 2 meters. Consists of tree communities with interspersed mixtures or mosaics of the other four forest types. None of the forest types exceeds 60% of landscape.)
+
+Source: https://doi.org/10.18140/FLX/1440134
+
+__Interpretation of biases of the out-of-sample predictions with a view to the site characteristics__
+
+As already mentioned in the previous Tasks, the accross-site predictions tend to overfit on the training set because the test sets have a much higher RMSE value than the training sets. This means the values of one site do not perform well on the data of the other site. This can be assumed as the two station have very different station characteristics (see above). This is basically the main reason why the models created with across-site predictions cant work. The local climates are very different as there is a different vegetation but also another altitude and mean annual temperature. In this case it does not make sense to furthermore pool the two datasets together because of already mentioned reasons.

@@ -12,7 +12,7 @@ output:
 
 # AGDS Report Exercise 5
 
-This Report Exercise implements a comparison of linear Regression and KNN models. Both were evaluated for a training set and a test set. The goal of this Report is to understand the observed differences between these two models. The Report is structured in 4 different Tasks with subchapter.
+This Report Exercise implements a comparison of linear Regression and KNN models. Both were evaluated for a training set and a test set. The goal of this Report is to understand the observed differences between these two models. The Report is structured in 4 different Tasks with subchapters. I also created a extra .R file named ml_01_func.R which contains large functions, which would influence the reading flow and the length of this Report.
 
 ## Task 1 - Data Visualization
 
@@ -30,7 +30,7 @@ visdat::vis_miss(half_hourly_fluxes) # Checking if any data in the dataset is mi
 half_hourly_fluxes_fixed <- stats::na.omit(half_hourly_fluxes) # Deleting all rows with at least one value which equals "NA"
 ```
 
-This chart shows if there is any "bad data" in the data frame. As it can be seen, there is no long tail and the data looks ok. There is no obvious "bad data". 
+This chart shows if there is any "bad data" in the data frame. As it can be seen, there is no long tail or gaps or outliers and the data looks ok. There is no obvious "bad data". 
 
 ```{r message = FALSE, warning=FALSE}
 # Plotting the data to see if there is bad data
@@ -109,21 +109,21 @@ eval_model(mod = model_knn, df_train = half_hourly_fluxes_train, df_test = half_
 
 __Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?__
 
-KNN models are more flexible than linear Regression models when it comes to overfitting. If a KNN is used in general the variance gets much higher compared to linear Regression (in Task 3 visualization). Because of this difference linear regression models have a lower flexibility, which can lead to higher bias in the model. Furthermore KNN models are complex models and linear regression models are models which assume a linear relationship between the predictors and the dependent variable. A big difference between training and test data could mean that the model generalizes well to new data, whereas if the difference is low it could mean that the model is nearly the same as the training data and it does not generalize well to new data.
+If one analyses the RMSE for between training and test set for both models, it can be seen, that the difference on the KNN is higher than the linear regression model. In this case it could be, because the KNN is more prone to overfitting than the linear regression model. Therefore the model makes accurate predictions for the training set (means low RMSE). However the overfitting could lead to a problem when facing a new data set (test set) because the model is to much specilized on the training set data (resulting in higher RMSE for test set). On the other site the difference between training and test set on the linear regression model is lower than KNN. This could be because the linear regression model makes linearity assumptions and therfore fits for training and test set. This makes it less flexible than the KNN model but more consistent for perfomance between training and test set.
 
 __Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?__
 
-The evaluation on the test set could indicate a better model performance of the KNN model than the linear regression model because the KNN is better able to capture the underlying structure of the data and looks beyond the linear relationship between predictor and dependent variable, as the linear regression model does. It is also important to choose a good number of neighbors because a poor number could influence the model performance.
+The evaluation on the test set could indicate a better model performance of the KNN model than the linear regression model because the KNN is better able to capture the underlying structure of the data and looks beyond the linear relationship between predictor and dependent variable, as the linear regression model does. In this case the KNN may generalize better to new data than the linear regression modeel. It is also important to choose a good number of neighbors because a poor number could influence the model performance.
 
 __How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?__
 
-It is very difficult to position these models in this spectrum, because both have their benefits and trade-offs. The KNN model has a higher variance and a lower bias, whereas the linear regression model comes with a lower variance and a high bias. The low bias of the KNN models is because they do not make assumptions about the relationship between the predictors and the dependent variable. The high variance makes the KNN model more vulnerable to overfitting. On the other hand the linear regression model make assumption about the linear relationship between predictors and dependent variable which increases the bias and decreases the variance. This leads to a simpler model which is less vulnerable to overfitting. So therefor it is difficult to position the two models in the spectrum. 
+It is very difficult to position these models in this spectrum, because both have their benefits and trade-offs. The KNN model has a higher variance (e.g. Illustration Task 3) and a lower bias, whereas the linear regression model comes with a lower variance (e.g. Illustration Task 3) and a high bias. The low bias of the KNN models is because they do not make assumptions about the relationship between the predictors and the dependent variable. The high variance makes the KNN model more vulnerable to overfitting. On the other hand the linear regression model make assumption about the linear relationship between predictors and dependent variable which increases the bias and decreases the variance. This leads to a simpler model which is less vulnerable to overfitting.
 
 ## Task 3 - Visualising observed and modelled GPP for KNN and Linear Regression
 
 In this task the observed and modelled GPP for KNN and linear Regression are visualized with two charts. The charts cover all available data.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 library(ggplot2)
 library(ggpubr)
 
@@ -161,9 +161,9 @@ With the knowledge gained from the previous chapter, a analysis of the role of k
 
 Based on the understanding of KNN i got of this lecture, i would suppose that if the k-value approaches to 1, the model has a lower variance but a higher bias, which results in a lower R2 value on the test and training models. The reason why this is the case, is that if k=1, the model will only use a single neighbor. Therefore the model is just dependent of this neighbor (lower variance because just focusing on one variable). This leads to overfitting of the training model which means it will not generalize well to new data. Therefore the R2 of the test model will decrease.
 
-If the k-value approaches to N, i suppose the model will have a higher variance and a lower bias, because it focuses on all variable which are available. Therefore the model will generalize well to new data. Also the R2 value increases on the test model.
+If the k-value approaches to N, i suppose the model will have a higher variance and a lower bias, because it focuses on all variable which are available. Therefore the model maybe generalize well to new data. Also the R2 value increases on the test model.
 
-For the information i got from the MAE i suppose, that if the k-value approaches to 1, the MAE will be higher, because the model overfits. If the k-value approaches to N, the MAE will be lower on the test model, because the model adapts well to new data.
+For the information i got from the MAE i suppose, that if the k-value approaches to 1, the MAE will be higher, because the model overfits. If the k-value approaches to N, the MAE will be lower on the test model, because the model maybe adapts well to new data.
 
 Overall i think it is difficult to find the optimal k-value, because it depends on the dataset but also on the model created.
 

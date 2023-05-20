@@ -7,9 +7,9 @@ output: html_document
 
 # AGDS Report Exercise 4
 
-In this Report a stepwise forward regression is used as analysis tool to present GPP as a function of different predictors. The regression is first shown as a simple loop and later as a simplified version with the integrated Step function of RStudio. As a help a data set named half_hourly_fluxes for the ecosystem is used. A first attempt tries to implement the evaluation of all bivariate models (single predictor). In another step, i try to show the full stepwise forward regression using all predictors to find the best model. The Report is structured in 4 Tasks with an individual short description in the title.
+In this Report a stepwise forward regression is used as a analysis tool to present GPP as a function of different predictors. The regression is first shown as a simple loop and later as a simplified version with the integrated Step function of RStudio. As a help a data set named half_hourly_fluxes for the ecosystem is used. A first attempt tries to implement the evaluation of all bivariate models (single predictor). In another step, i try to show the full stepwise forward regression using all predictors to find the best model. The Report is structured in 4 Tasks with an individual short description in the title.
 
-## Task 1 - Loading the data into R and creating new tables
+## Task 1 - Loading the data into R and deleting NA values
 
 ```{r message = FALSE}
 half_hourly_fluxes <- readr::read_csv("../data/df_for_stepwise_regression.csv") # Loading the dataset (.csv) into R and creating a table
@@ -175,7 +175,7 @@ formula(one_row_model) # Extract the formula for the best model
 
 ### Task 3.1 - Comparison of created loop with function "step"
 
-This loop generates the best fitting model using the step function of RStudio. The result can be seen with formula(model_step). It shows the same "best fitting model" as the loop made in Task 3. Therefor my loop worked. 
+This loop generates the best fitting model using the step function of RStudio. The result can be seen with formula (model_step). It shows the same "best fitting model" as the loop made in Task 3. Therefor my loop worked. 
 
 ```{r eval = FALSE}
 Fit_model <- lm(GPP_NT_VUT_REF ~ 1, data = half_hourly_fluxes_fixed) # Fit the linear model
